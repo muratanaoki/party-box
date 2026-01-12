@@ -66,41 +66,28 @@ export default function OneHintRoomPage() {
 
   if (!playerId || !playerName) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">リダイレクト中...</p>
-        </div>
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <p className="text-slate-500 text-sm">リダイレクト中...</p>
       </main>
     );
   }
 
   if (!roomState) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-        <div className="text-center">
-          {error ? (
-            <div className="bg-white rounded-2xl shadow-xl p-8 space-y-4">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
-                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <p className="text-red-600 font-medium">{error}</p>
-              <button
-                onClick={() => router.push('/one-hint')}
-                className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
-              >
-                ロビーに戻る
-              </button>
-            </div>
-          ) : (
-            <div>
-              <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-600">接続中...</p>
-            </div>
-          )}
-        </div>
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        {error ? (
+          <div className="text-center">
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={() => router.push('/one-hint')}
+              className="text-slate-500 hover:text-slate-700 text-sm"
+            >
+              ← ロビーに戻る
+            </button>
+          </div>
+        ) : (
+          <p className="text-slate-500 text-sm">接続中...</p>
+        )}
       </main>
     );
   }
@@ -180,44 +167,23 @@ export default function OneHintRoomPage() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-6 bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-      <div className="w-full max-w-md">
-        <div className="flex items-center justify-between mb-6">
-          <Link
-            href="/one-hint"
-            className="inline-flex items-center text-gray-500 hover:text-gray-700 text-sm transition-colors"
-          >
-            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            退出
+    <main className="min-h-screen bg-slate-50 p-4">
+      <div className="max-w-sm mx-auto">
+        <div className="flex items-center justify-between mb-4 pt-2">
+          <Link href="/one-hint" className="text-slate-400 hover:text-slate-600 text-sm">
+            ← 退出
           </Link>
-          <div className="flex items-center gap-2">
-            {isConnected ? (
-              <span className="inline-flex items-center text-green-600 text-sm font-medium">
-                <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                接続中
-              </span>
-            ) : (
-              <span className="inline-flex items-center text-orange-600 text-sm font-medium">
-                <span className="w-2 h-2 bg-orange-500 rounded-full mr-2 animate-pulse"></span>
-                再接続中...
-              </span>
-            )}
-          </div>
+          {isConnected ? (
+            <span className="text-green-600 text-xs">● 接続中</span>
+          ) : (
+            <span className="text-orange-500 text-xs">● 再接続中...</span>
+          )}
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 relative">
+          <div className="bg-red-50 text-red-600 px-3 py-2 rounded-lg mb-4 text-sm flex justify-between items-center">
             <span>{error}</span>
-            <button
-              onClick={clearError}
-              className="absolute top-2 right-2 text-red-400 hover:text-red-600"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            <button onClick={clearError} className="text-red-400 hover:text-red-600 ml-2">✕</button>
           </div>
         )}
 

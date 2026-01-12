@@ -97,129 +97,92 @@ export default function OneHintLobby() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-6 bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-6">
-          <Link href="/" className="inline-flex items-center text-gray-500 hover:text-gray-700 text-sm transition-colors">
-            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            ゲーム選択
+    <main className="min-h-screen bg-slate-50 p-4">
+      <div className="max-w-sm mx-auto pt-8">
+        <div className="flex items-center justify-between mb-6">
+          <Link href="/" className="text-slate-400 hover:text-slate-600 text-sm">
+            ← 戻る
           </Link>
+          {isConnected ? (
+            <span className="text-green-600 text-xs">● 接続中</span>
+          ) : (
+            <span className="text-orange-500 text-xs">● 接続中...</span>
+          )}
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
-          <div className="text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl mb-4 shadow-lg">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-              </svg>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-slate-800">One Hint</h1>
+          <p className="text-slate-500 text-sm mt-1">AIが審判の協力型ワードゲーム</p>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 text-red-600 px-3 py-2 rounded-lg mb-4 text-sm flex justify-between items-center">
+            <span>{error}</span>
+            <button onClick={clearError} className="text-red-400 hover:text-red-600 ml-2">✕</button>
+          </div>
+        )}
+
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1.5">名前</label>
+            <input
+              type="text"
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              placeholder="あなたの名前"
+              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              maxLength={20}
+            />
+          </div>
+
+          <button
+            onClick={handleCreateRoom}
+            disabled={!playerName.trim() || !isConnected || isLoading}
+            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            {isLoading ? '作成中...' : '新しい部屋を作成'}
+          </button>
+
+          <div className="relative py-2">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200"></div>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-1">One Hint</h1>
-            <p className="text-gray-500">AIが審判の協力型ワード推測ゲーム</p>
-            <div className="mt-3">
-              {isConnected ? (
-                <span className="inline-flex items-center text-green-600 text-sm font-medium">
-                  <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                  接続中
-                </span>
-              ) : (
-                <span className="inline-flex items-center text-orange-600 text-sm font-medium">
-                  <span className="w-2 h-2 bg-orange-500 rounded-full mr-2 animate-pulse"></span>
-                  接続待ち...
-                </span>
-              )}
+            <div className="relative flex justify-center">
+              <span className="px-2 bg-white text-slate-400 text-xs">または</span>
             </div>
           </div>
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl relative">
-              <span>{error}</span>
-              <button
-                onClick={clearError}
-                className="absolute top-2 right-2 text-red-400 hover:text-red-600"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          )}
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">表示名</label>
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1.5">ルームIDで参加</label>
+            <div className="flex gap-2">
               <input
                 type="text"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                placeholder="名前を入力"
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder-gray-400"
-                maxLength={20}
+                value={roomIdInput}
+                onChange={(e) => setRoomIdInput(e.target.value.toUpperCase())}
+                placeholder="ABCD"
+                className="flex-1 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent uppercase text-center font-mono tracking-wider"
+                maxLength={4}
               />
-            </div>
-
-            <button
-              onClick={handleCreateRoom}
-              disabled={!playerName.trim() || !isConnected || isLoading}
-              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-colors shadow-lg shadow-indigo-200 disabled:shadow-none"
-            >
-              {isLoading ? '作成中...' : '部屋を作成'}
-            </button>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-3 bg-white text-gray-400">または</span>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                ルームIDで参加
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={roomIdInput}
-                  onChange={(e) => setRoomIdInput(e.target.value.toUpperCase())}
-                  placeholder="ABCD"
-                  className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent uppercase text-gray-900 placeholder-gray-400 text-center font-mono tracking-widest"
-                  maxLength={4}
-                />
-                <button
-                  onClick={handleJoinRoom}
-                  disabled={
-                    !playerName.trim() ||
-                    !roomIdInput.trim() ||
-                    !isConnected ||
-                    isLoading
-                  }
-                  className="px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-colors"
-                >
-                  参加
-                </button>
-              </div>
+              <button
+                onClick={handleJoinRoom}
+                disabled={!playerName.trim() || !roomIdInput.trim() || !isConnected || isLoading}
+                className="px-5 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                参加
+              </button>
             </div>
           </div>
         </div>
 
-        <div className="mt-6 bg-white/60 backdrop-blur rounded-xl p-5 text-sm">
-          <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
-            <svg className="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            遊び方
-          </h3>
-          <ol className="list-decimal list-inside space-y-2 text-gray-600">
+        <details className="mt-4 text-sm">
+          <summary className="text-slate-500 cursor-pointer hover:text-slate-700">遊び方を見る</summary>
+          <ol className="mt-3 space-y-1.5 text-slate-600 pl-4 list-decimal list-inside">
             <li>1人が回答者になり、お題を見れない</li>
             <li>他のプレイヤーは1単語ずつヒントを出す</li>
             <li>AIが重複ヒントを判定して無効化</li>
             <li>回答者は有効なヒントだけを見て答える</li>
           </ol>
-        </div>
+        </details>
       </div>
     </main>
   );
