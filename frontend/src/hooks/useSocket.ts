@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { getSocket, connectSocket, disconnectSocket } from '@/lib/socket';
-import { RoomState } from '@/types/game';
+import { RoomState, GameType } from '@/types/game';
 
 interface UseSocketReturn {
   isConnected: boolean;
   roomState: RoomState | null;
   error: string | null;
-  createRoom: (playerId: string, playerName: string) => void;
+  createRoom: (playerId: string, playerName: string, gameType?: GameType) => void;
   joinRoom: (roomId: string, playerId: string, playerName: string) => void;
   startGame: (roomId: string, playerId: string) => void;
   submitHint: (roomId: string, playerId: string, hint: string) => void;
@@ -57,10 +57,13 @@ export function useSocket(): UseSocketReturn {
     };
   }, []);
 
-  const createRoom = useCallback((playerId: string, playerName: string) => {
-    const socket = getSocket();
-    socket.emit('create-room', { playerId, playerName });
-  }, []);
+  const createRoom = useCallback(
+    (playerId: string, playerName: string, gameType?: GameType) => {
+      const socket = getSocket();
+      socket.emit('create-room', { playerId, playerName, gameType });
+    },
+    []
+  );
 
   const joinRoom = useCallback(
     (roomId: string, playerId: string, playerName: string) => {

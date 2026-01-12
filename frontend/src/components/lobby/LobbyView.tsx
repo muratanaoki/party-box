@@ -32,7 +32,7 @@ export function LobbyView({
   const canStart = players.length >= minPlayers;
 
   const handleCopyLink = () => {
-    const url = `${window.location.origin}/room/${roomId}`;
+    const url = `${window.location.origin}/${gameType}/room/${roomId}`;
     navigator.clipboard.writeText(url);
   };
 
