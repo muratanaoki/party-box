@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useSocket } from '@/hooks/useSocket';
 import { LobbyView } from '@/components/lobby/LobbyView';
 import { HintingPhase } from '@/components/game/HintingPhase';
@@ -12,7 +13,7 @@ import { OneHintGame } from '@/types/game';
 const PLAYER_ID_KEY = 'partybox_player_id';
 const PLAYER_NAME_KEY = 'partybox_player_name';
 
-export default function RoomPage() {
+export default function OneHintRoomPage() {
   const params = useParams();
   const router = useRouter();
   const roomId = (params.roomId as string).toUpperCase();
@@ -38,7 +39,7 @@ export default function RoomPage() {
     const name = localStorage.getItem(PLAYER_NAME_KEY);
 
     if (!id || !name) {
-      router.push(`/?room=${roomId}`);
+      router.push(`/one-hint?room=${roomId}`);
       return;
     }
 
@@ -69,10 +70,10 @@ export default function RoomPage() {
             <div className="space-y-4">
               <p className="text-red-400">{error}</p>
               <button
-                onClick={() => router.push('/')}
+                onClick={() => router.push('/one-hint')}
                 className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg"
               >
-                トップに戻る
+                ロビーに戻る
               </button>
             </div>
           ) : (
@@ -93,6 +94,11 @@ export default function RoomPage() {
     submitAnswer(roomId, playerId, answer);
   const handleNextRound = () => nextRound(roomId, playerId);
 
+  const handleCopyLink = () => {
+    const url = `${window.location.origin}/one-hint/room/${roomId}`;
+    navigator.clipboard.writeText(url);
+  };
+
   const renderGame = () => {
     if (!game) {
       return (
@@ -107,12 +113,11 @@ export default function RoomPage() {
       );
     }
 
-    switch (game.type) {
-      case 'one-hint':
-        return renderOneHintGame(game);
-      default:
-        return <p>不明なゲームタイプ</p>;
+    if (game.type !== 'one-hint') {
+      return <p>不正なゲームタイプ</p>;
     }
+
+    return renderOneHintGame(game);
   };
 
   const renderOneHintGame = (game: OneHintGame) => {
@@ -165,12 +170,12 @@ export default function RoomPage() {
     <main className="flex min-h-screen flex-col items-center p-8">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-between mb-6">
-          <button
-            onClick={() => router.push('/')}
+          <Link
+            href="/one-hint"
             className="text-gray-400 hover:text-white transition-colors"
           >
             ← 退出
-          </button>
+          </Link>
           <div className="flex items-center gap-2">
             {isConnected ? (
               <span className="text-green-500 text-sm">● 接続中</span>
