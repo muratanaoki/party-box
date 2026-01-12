@@ -38,40 +38,50 @@ export function LobbyView({
 
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <p className="text-gray-400 mb-1">ゲーム</p>
-        <p className="text-xl font-bold mb-4">{GAME_NAMES[gameType]}</p>
-        <p className="text-gray-400 mb-2">ルームID</p>
-        <div className="flex items-center justify-center gap-4">
-          <span className="text-4xl font-bold tracking-widest">{roomId}</span>
+      <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
+        <p className="text-gray-500 text-sm mb-1">ゲーム</p>
+        <p className="text-xl font-bold text-gray-900 mb-4">{GAME_NAMES[gameType]}</p>
+        <p className="text-gray-500 text-sm mb-2">ルームID</p>
+        <div className="flex items-center justify-center gap-3">
+          <span className="text-4xl font-bold tracking-widest text-indigo-600">{roomId}</span>
           <button
             onClick={handleCopyLink}
-            className="px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 rounded transition-colors"
+            className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+            title="リンクをコピー"
           >
-            リンクをコピー
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
           </button>
         </div>
       </div>
 
-      <PlayerList players={players} currentPlayerId={currentPlayerId} />
+      <div className="bg-white rounded-2xl shadow-lg p-6">
+        <PlayerList players={players} currentPlayerId={currentPlayerId} />
+      </div>
 
-      <div className="text-center">
+      <div className="text-center space-y-4">
         {players.length < minPlayers && (
-          <p className="text-yellow-500 mb-4">
-            ゲームを開始するには{minPlayers}人以上必要です
-          </p>
+          <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-xl text-sm">
+            ゲームを開始するには{minPlayers}人以上必要です（現在{players.length}人）
+          </div>
         )}
 
         {isHost ? (
           <button
             onClick={onStartGame}
             disabled={!canStart}
-            className="w-full py-4 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg font-bold text-lg transition-colors"
+            className="w-full py-4 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg transition-colors shadow-lg shadow-green-200 disabled:shadow-none"
           >
             ゲームを開始
           </button>
         ) : (
-          <p className="text-gray-400">ホストがゲームを開始するのを待っています...</p>
+          <div className="bg-gray-50 rounded-xl p-4 text-gray-500">
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+              <span>ホストがゲームを開始するのを待っています...</span>
+            </div>
+          </div>
         )}
       </div>
     </div>
