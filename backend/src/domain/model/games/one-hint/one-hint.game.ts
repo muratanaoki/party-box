@@ -1,4 +1,6 @@
-export type GamePhase = 'LOBBY' | 'HINTING' | 'GUESSING' | 'RESULT';
+import { GameBase } from '../../game-base';
+
+export type OneHintPhase = 'HINTING' | 'GUESSING' | 'RESULT';
 
 export interface Hint {
   playerId: string;
@@ -7,14 +9,14 @@ export interface Hint {
   isValid: boolean;
 }
 
-export interface OneHintGame {
-  phase: GamePhase;
+export interface OneHintGame extends GameBase {
+  type: 'one-hint';
+  phase: OneHintPhase;
   topic: string;
   answererId: string;
   hints: Hint[];
   answer: string | null;
   isCorrect: boolean | null;
-  round: number;
 }
 
 const WORD_LIST: string[] = [
@@ -60,9 +62,10 @@ const WORD_LIST: string[] = [
   'コーヒー',
 ];
 
-export function createGame(answererId: string): OneHintGame {
+export function createOneHintGame(answererId: string): OneHintGame {
   const topic = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
   return {
+    type: 'one-hint',
     phase: 'HINTING',
     topic,
     answererId,
@@ -148,6 +151,7 @@ export function resetGameForNextRound(
 ): OneHintGame {
   const topic = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
   return {
+    type: 'one-hint',
     phase: 'HINTING',
     topic,
     answererId: newAnswererId,

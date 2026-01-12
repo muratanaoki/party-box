@@ -3,7 +3,10 @@ import {
   IGameRepository,
   GAME_REPOSITORY,
 } from '../../domain/repository/i-game.repository';
-import { submitAnswer } from '../../domain/model/game';
+import {
+  OneHintGame,
+  submitAnswer,
+} from '../../domain/model/games/one-hint/one-hint.game';
 import { Room } from '../../domain/model/room';
 import { SubmitAnswerDto } from '../dto/game-action.dto';
 
@@ -35,6 +38,13 @@ export class InvalidPhaseError extends Error {
   }
 }
 
+export class InvalidGameTypeError extends Error {
+  constructor(gameType: string) {
+    super(`This action is not supported for game type: ${gameType}`);
+    this.name = 'InvalidGameTypeError';
+  }
+}
+
 @Injectable()
 export class SubmitAnswerUseCase {
   constructor(
@@ -53,19 +63,25 @@ export class SubmitAnswerUseCase {
       throw new GameNotStartedError();
     }
 
-    if (room.game.phase !== 'GUESSING') {
+    if (room.game.type !== 'one-hint') {
+      throw new InvalidGameTypeError(room.game.type);
+    }
+
+    const game = room.game as OneHintGame;
+
+    if (game.phase !== 'GUESSING') {
       throw new InvalidPhaseError();
     }
 
-    if (room.game.answererId !== dto.playerId) {
+    if (game.answererId !== dto.playerId) {
       throw new NotAnswererError();
     }
 
-    const game = submitAnswer(room.game, dto.answer);
+    const updatedGame = submitAnswer(game, dto.answer);
 
     const updatedRoom: Room = {
       ...room,
-      game,
+      game: updatedGame,
     };
 
     await this.gameRepository.saveRoom(updatedRoom);

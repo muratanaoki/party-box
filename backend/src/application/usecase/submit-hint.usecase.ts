@@ -8,11 +8,12 @@ import {
   HINT_JUDGE_SERVICE,
 } from '../../domain/service/i-hint-judge.service';
 import {
+  OneHintGame,
   submitHint,
   allHintsSubmitted,
   setHintValidity,
   transitionToGuessing,
-} from '../../domain/model/game';
+} from '../../domain/model/games/one-hint/one-hint.game';
 import { Room } from '../../domain/model/room';
 import { SubmitHintDto } from '../dto/game-action.dto';
 
@@ -37,6 +38,13 @@ export class InvalidPhaseError extends Error {
   }
 }
 
+export class InvalidGameTypeError extends Error {
+  constructor(gameType: string) {
+    super(`This action is not supported for game type: ${gameType}`);
+    this.name = 'InvalidGameTypeError';
+  }
+}
+
 @Injectable()
 export class SubmitHintUseCase {
   constructor(
@@ -57,7 +65,13 @@ export class SubmitHintUseCase {
       throw new GameNotStartedError();
     }
 
-    if (room.game.phase !== 'HINTING') {
+    if (room.game.type !== 'one-hint') {
+      throw new InvalidGameTypeError(room.game.type);
+    }
+
+    const game = room.game as OneHintGame;
+
+    if (game.phase !== 'HINTING') {
       throw new InvalidPhaseError();
     }
 
@@ -66,16 +80,16 @@ export class SubmitHintUseCase {
       throw new Error('Player not found in room');
     }
 
-    let game = submitHint(room.game, dto.playerId, player.name, dto.hint);
+    let updatedGame = submitHint(game, dto.playerId, player.name, dto.hint);
 
     const connectedNonAnswerers = room.players.filter(
-      (p) => p.isConnected && p.id !== game.answererId,
+      (p) => p.isConnected && p.id !== updatedGame.answererId,
     );
 
-    if (allHintsSubmitted(game, connectedNonAnswerers.length + 1)) {
+    if (allHintsSubmitted(updatedGame, connectedNonAnswerers.length + 1)) {
       const judgments = await this.hintJudgeService.judgeHints(
-        game.topic,
-        game.hints,
+        updatedGame.topic,
+        updatedGame.hints,
       );
 
       const validityMap = new Map<string, boolean>();
@@ -83,13 +97,13 @@ export class SubmitHintUseCase {
         validityMap.set(judgment.playerId, judgment.isValid);
       }
 
-      game = setHintValidity(game, validityMap);
-      game = transitionToGuessing(game);
+      updatedGame = setHintValidity(updatedGame, validityMap);
+      updatedGame = transitionToGuessing(updatedGame);
     }
 
     const updatedRoom: Room = {
       ...room,
-      game,
+      game: updatedGame,
     };
 
     await this.gameRepository.saveRoom(updatedRoom);

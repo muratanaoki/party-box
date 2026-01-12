@@ -4,7 +4,7 @@ import {
   IHintJudgeService,
   HintJudgmentResult,
 } from '../../domain/service/i-hint-judge.service';
-import { Hint } from '../../domain/model/game';
+import { Hint } from '../../domain/model/games/one-hint/one-hint.game';
 
 @Injectable()
 export class OpenAIHintJudgeService implements IHintJudgeService {

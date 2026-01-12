@@ -3,7 +3,10 @@ import {
   IGameRepository,
   GAME_REPOSITORY,
 } from '../../domain/repository/i-game.repository';
-import { resetGameForNextRound } from '../../domain/model/game';
+import {
+  OneHintGame,
+  resetGameForNextRound,
+} from '../../domain/model/games/one-hint/one-hint.game';
 import { getHost, Room } from '../../domain/model/room';
 import { NextRoundDto } from '../dto/game-action.dto';
 
@@ -35,6 +38,13 @@ export class InvalidPhaseError extends Error {
   }
 }
 
+export class InvalidGameTypeError extends Error {
+  constructor(gameType: string) {
+    super(`This action is not supported for game type: ${gameType}`);
+    this.name = 'InvalidGameTypeError';
+  }
+}
+
 @Injectable()
 export class NextRoundUseCase {
   constructor(
@@ -58,23 +68,29 @@ export class NextRoundUseCase {
       throw new NotHostError();
     }
 
-    if (room.game.phase !== 'RESULT') {
+    if (room.game.type !== 'one-hint') {
+      throw new InvalidGameTypeError(room.game.type);
+    }
+
+    const game = room.game as OneHintGame;
+
+    if (game.phase !== 'RESULT') {
       throw new InvalidPhaseError();
     }
 
     const connectedPlayers = room.players.filter((p) => p.isConnected);
     const currentAnswererIndex = connectedPlayers.findIndex(
-      (p) => p.id === room.game!.answererId,
+      (p) => p.id === game.answererId,
     );
     const nextAnswererIndex =
       (currentAnswererIndex + 1) % connectedPlayers.length;
     const nextAnswerer = connectedPlayers[nextAnswererIndex];
 
-    const game = resetGameForNextRound(room.game, nextAnswerer.id);
+    const updatedGame = resetGameForNextRound(game, nextAnswerer.id);
 
     const updatedRoom: Room = {
       ...room,
-      game,
+      game: updatedGame,
     };
 
     await this.gameRepository.saveRoom(updatedRoom);

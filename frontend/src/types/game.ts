@@ -1,10 +1,16 @@
-export type GamePhase = 'LOBBY' | 'HINTING' | 'GUESSING' | 'RESULT';
+export type GameType = 'one-hint';
 
 export interface Player {
   id: string;
   name: string;
   isHost: boolean;
   isConnected: boolean;
+}
+
+export interface GameBase {
+  type: GameType;
+  phase: string;
+  round: number;
 }
 
 export interface Hint {
@@ -14,18 +20,21 @@ export interface Hint {
   isValid: boolean;
 }
 
-export interface Game {
-  phase: GamePhase;
+export interface OneHintGame extends GameBase {
+  type: 'one-hint';
+  phase: 'HINTING' | 'GUESSING' | 'RESULT';
   topic: string | null;
   answererId: string;
   hints: Hint[];
   answer: string | null;
   isCorrect: boolean | null;
-  round: number;
 }
+
+export type Game = OneHintGame;
 
 export interface RoomState {
   id: string;
   players: Player[];
+  gameType: GameType;
   game: Game | null;
 }

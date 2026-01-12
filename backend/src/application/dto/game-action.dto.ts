@@ -1,6 +1,9 @@
+import { GameType } from '../../domain/model/game-base';
+
 export interface CreateRoomDto {
   playerId: string;
   playerName: string;
+  gameType?: GameType;
 }
 
 export interface JoinRoomDto {
