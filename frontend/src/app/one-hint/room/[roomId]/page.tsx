@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useSocket } from '@/hooks/useSocket';
 import { LobbyView } from '@/components/lobby/LobbyView';
@@ -10,13 +10,22 @@ import { GuessingPhase } from '@/components/game/GuessingPhase';
 import { ResultPhase } from '@/components/game/ResultPhase';
 import { OneHintGame } from '@/types/game';
 
-const PLAYER_ID_KEY = 'partybox_player_id';
-const PLAYER_NAME_KEY = 'partybox_player_name';
+const getStorageKeys = (devId: string | null) => {
+  const suffix = devId ? `_dev${devId}` : '';
+  return {
+    PLAYER_ID_KEY: `partybox_player_id${suffix}`,
+    PLAYER_NAME_KEY: `partybox_player_name${suffix}`,
+  };
+};
 
 export default function OneHintRoomPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const roomId = (params.roomId as string).toUpperCase();
+
+  const devId = searchParams.get('dev');
+  const { PLAYER_ID_KEY, PLAYER_NAME_KEY } = getStorageKeys(devId);
 
   const {
     isConnected,
@@ -39,13 +48,14 @@ export default function OneHintRoomPage() {
     const name = localStorage.getItem(PLAYER_NAME_KEY);
 
     if (!id || !name) {
-      router.push(`/one-hint?room=${roomId}`);
+      const devParam = devId ? `&dev=${devId}` : '';
+      router.push(`/one-hint?room=${roomId}${devParam}`);
       return;
     }
 
     setPlayerId(id);
     setPlayerName(name);
-  }, [roomId, router]);
+  }, [roomId, router, PLAYER_ID_KEY, PLAYER_NAME_KEY, devId]);
 
   useEffect(() => {
     if (isConnected && playerId && playerName && !hasJoined) {

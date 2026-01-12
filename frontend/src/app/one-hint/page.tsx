@@ -7,13 +7,21 @@ import Link from 'next/link';
 import { useSocket } from '@/hooks/useSocket';
 import { getSocket } from '@/lib/socket';
 
-const PLAYER_ID_KEY = 'partybox_player_id';
-const PLAYER_NAME_KEY = 'partybox_player_name';
+const getStorageKeys = (devId: string | null) => {
+  const suffix = devId ? `_dev${devId}` : '';
+  return {
+    PLAYER_ID_KEY: `partybox_player_id${suffix}`,
+    PLAYER_NAME_KEY: `partybox_player_name${suffix}`,
+  };
+};
 
 export default function OneHintLobby() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isConnected, createRoom, joinRoom, error, clearError } = useSocket();
+
+  const devId = searchParams.get('dev');
+  const { PLAYER_ID_KEY, PLAYER_NAME_KEY } = getStorageKeys(devId);
 
   const [playerName, setPlayerName] = useState('');
   const [roomIdInput, setRoomIdInput] = useState('');
@@ -31,25 +39,28 @@ export default function OneHintLobby() {
     const savedName = localStorage.getItem(PLAYER_NAME_KEY);
     if (savedName) {
       setPlayerName(savedName);
+    } else if (devId) {
+      setPlayerName(`Player ${devId}`);
     }
 
     const roomFromUrl = searchParams.get('room');
     if (roomFromUrl) {
       setRoomIdInput(roomFromUrl.toUpperCase());
     }
-  }, [searchParams]);
+  }, [searchParams, PLAYER_ID_KEY, PLAYER_NAME_KEY, devId]);
 
   useEffect(() => {
     const socket = getSocket();
+    const devParam = devId ? `?dev=${devId}` : '';
 
     function onRoomCreated(data: { roomId: string }) {
       setIsLoading(false);
-      router.push(`/one-hint/room/${data.roomId}`);
+      router.push(`/one-hint/room/${data.roomId}${devParam}`);
     }
 
     function onRoomJoined(data: { roomId: string }) {
       setIsLoading(false);
-      router.push(`/one-hint/room/${data.roomId}`);
+      router.push(`/one-hint/room/${data.roomId}${devParam}`);
     }
 
     function onError() {
@@ -65,7 +76,7 @@ export default function OneHintLobby() {
       socket.off('room-joined', onRoomJoined);
       socket.off('error', onError);
     };
-  }, [router]);
+  }, [router, devId]);
 
   const handleCreateRoom = () => {
     if (!playerName.trim()) {
