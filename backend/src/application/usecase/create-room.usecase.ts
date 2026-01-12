@@ -22,7 +22,7 @@ export class CreateRoomUseCase {
     } while (await this.gameRepository.roomExists(roomId));
 
     const host = createPlayer(dto.playerId, dto.playerName, true);
-    const room = createRoom(roomId, host);
+    const room = createRoom(roomId, host, dto.gameType ?? 'one-hint');
 
     await this.gameRepository.saveRoom(room);
 

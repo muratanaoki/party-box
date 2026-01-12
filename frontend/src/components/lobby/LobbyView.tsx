@@ -1,13 +1,22 @@
 'use client';
 
-import { Player } from '@/types/game';
+import { Player, GameType } from '@/types/game';
 import { PlayerList } from '../common/PlayerList';
+
+const GAME_NAMES: Record<GameType, string> = {
+  'one-hint': 'One Hint',
+};
+
+const MIN_PLAYERS: Record<GameType, number> = {
+  'one-hint': 3,
+};
 
 interface LobbyViewProps {
   roomId: string;
   players: Player[];
   currentPlayerId: string;
   isHost: boolean;
+  gameType: GameType;
   onStartGame: () => void;
 }
 
@@ -16,9 +25,11 @@ export function LobbyView({
   players,
   currentPlayerId,
   isHost,
+  gameType,
   onStartGame,
 }: LobbyViewProps) {
-  const canStart = players.length >= 3;
+  const minPlayers = MIN_PLAYERS[gameType];
+  const canStart = players.length >= minPlayers;
 
   const handleCopyLink = () => {
     const url = `${window.location.origin}/room/${roomId}`;
@@ -28,6 +39,8 @@ export function LobbyView({
   return (
     <div className="space-y-6">
       <div className="text-center">
+        <p className="text-gray-400 mb-1">ゲーム</p>
+        <p className="text-xl font-bold mb-4">{GAME_NAMES[gameType]}</p>
         <p className="text-gray-400 mb-2">ルームID</p>
         <div className="flex items-center justify-center gap-4">
           <span className="text-4xl font-bold tracking-widest">{roomId}</span>
@@ -43,9 +56,9 @@ export function LobbyView({
       <PlayerList players={players} currentPlayerId={currentPlayerId} />
 
       <div className="text-center">
-        {players.length < 3 && (
+        {players.length < minPlayers && (
           <p className="text-yellow-500 mb-4">
-            ゲームを開始するには3人以上必要です
+            ゲームを開始するには{minPlayers}人以上必要です
           </p>
         )}
 

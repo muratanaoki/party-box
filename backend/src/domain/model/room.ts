@@ -1,17 +1,20 @@
 import { Player } from './player';
-import { OneHintGame } from './game';
+import { GameType } from './game-base';
+import { Game } from './games';
 
 export interface Room {
   id: string;
   players: Player[];
-  game: OneHintGame | null;
+  gameType: GameType;
+  game: Game | null;
   createdAt: Date;
 }
 
-export function createRoom(id: string, host: Player): Room {
+export function createRoom(id: string, host: Player, gameType: GameType = 'one-hint'): Room {
   return {
     id,
     players: [host],
+    gameType,
     game: null,
     createdAt: new Date(),
   };

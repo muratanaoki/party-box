@@ -1,4 +1,4 @@
-import { Hint } from '../model/game';
+import { Hint } from '../model/games/one-hint/one-hint.game';
 
 export interface HintJudgmentResult {
   playerId: string;

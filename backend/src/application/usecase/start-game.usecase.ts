@@ -3,7 +3,8 @@ import {
   IGameRepository,
   GAME_REPOSITORY,
 } from '../../domain/repository/i-game.repository';
-import { createGame } from '../../domain/model/game';
+import { GameType, GAME_CONFIGS } from '../../domain/model/game-base';
+import { createOneHintGame } from '../../domain/model/games/one-hint/one-hint.game';
 import { getHost, Room } from '../../domain/model/room';
 import { StartGameDto } from '../dto/game-action.dto';
 
@@ -15,8 +16,8 @@ export class NotHostError extends Error {
 }
 
 export class NotEnoughPlayersError extends Error {
-  constructor() {
-    super('Need at least 3 players to start the game');
+  constructor(minPlayers: number) {
+    super(`Need at least ${minPlayers} players to start the game`);
     this.name = 'NotEnoughPlayersError';
   }
 }
@@ -47,15 +48,16 @@ export class StartGameUseCase {
       throw new NotHostError();
     }
 
-    if (room.players.length < 3) {
-      throw new NotEnoughPlayersError();
+    const config = GAME_CONFIGS[room.gameType];
+    if (room.players.length < config.minPlayers) {
+      throw new NotEnoughPlayersError(config.minPlayers);
     }
 
     const connectedPlayers = room.players.filter((p) => p.isConnected);
     const randomIndex = Math.floor(Math.random() * connectedPlayers.length);
     const answerer = connectedPlayers[randomIndex];
 
-    const game = createGame(answerer.id);
+    const game = this.createGameByType(room.gameType, answerer.id);
 
     const updatedRoom: Room = {
       ...room,
@@ -65,5 +67,14 @@ export class StartGameUseCase {
     await this.gameRepository.saveRoom(updatedRoom);
 
     return updatedRoom;
+  }
+
+  private createGameByType(gameType: GameType, answererId: string) {
+    switch (gameType) {
+      case 'one-hint':
+        return createOneHintGame(answererId);
+      default:
+        throw new Error(`Unknown game type: ${gameType}`);
+    }
   }
 }

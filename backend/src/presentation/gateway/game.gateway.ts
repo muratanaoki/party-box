@@ -20,7 +20,8 @@ import {
   GAME_REPOSITORY,
 } from '../../domain/repository/i-game.repository';
 import { updatePlayerConnection, Room } from '../../domain/model/room';
-import { Hint } from '../../domain/model/game';
+import { GameType } from '../../domain/model/game-base';
+import { OneHintGame } from '../../domain/model/games/one-hint/one-hint.game';
 
 interface ClientData {
   playerId: string;
@@ -35,20 +36,8 @@ interface RoomStateForClient {
     isHost: boolean;
     isConnected: boolean;
   }>;
-  game: {
-    phase: string;
-    topic: string | null;
-    answererId: string;
-    hints: Array<{
-      playerId: string;
-      playerName: string;
-      text: string | null;
-      isValid: boolean;
-    }>;
-    answer: string | null;
-    isCorrect: boolean | null;
-    round: number;
-  } | null;
+  gameType: GameType;
+  game: Record<string, unknown> | null;
 }
 
 @WebSocketGateway({
@@ -98,12 +87,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('create-room')
   async handleCreateRoom(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { playerId: string; playerName: string },
+    @MessageBody() payload: { playerId: string; playerName: string; gameType?: GameType },
   ): Promise<void> {
     try {
       const room = await this.createRoomUseCase.execute({
         playerId: payload.playerId,
         playerName: payload.playerName,
+        gameType: payload.gameType,
       });
 
       this.clientData.set(client.id, {
@@ -219,51 +209,22 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   private broadcastRoomState(room: Room): void {
-    const state = this.transformRoomForClients(room);
-
     for (const player of room.players) {
       const playerState = this.transformRoomForPlayer(room, player.id);
-      this.server.to(room.id).emit('room-updated', playerState);
+
+      for (const [socketId, data] of this.clientData.entries()) {
+        if (data.roomId === room.id && data.playerId === player.id) {
+          this.server.to(socketId).emit('room-updated', playerState);
+        }
+      }
     }
-
-    this.server.to(room.id).emit('room-updated', state);
-  }
-
-  private transformRoomForClients(room: Room): RoomStateForClient {
-    return {
-      id: room.id,
-      players: room.players.map((p) => ({
-        id: p.id,
-        name: p.name,
-        isHost: p.isHost,
-        isConnected: p.isConnected,
-      })),
-      game: room.game
-        ? {
-            phase: room.game.phase,
-            topic: null,
-            answererId: room.game.answererId,
-            hints: room.game.hints.map((h) => ({
-              playerId: h.playerId,
-              playerName: h.playerName,
-              text: h.isValid ? h.text : null,
-              isValid: h.isValid,
-            })),
-            answer: room.game.answer,
-            isCorrect: room.game.isCorrect,
-            round: room.game.round,
-          }
-        : null,
-    };
   }
 
   private transformRoomForPlayer(
     room: Room,
     playerId: string,
   ): RoomStateForClient {
-    const isAnswerer = room.game?.answererId === playerId;
-
-    return {
+    const baseState: RoomStateForClient = {
       id: room.id,
       players: room.players.map((p) => ({
         id: p.id,
@@ -271,30 +232,53 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         isHost: p.isHost,
         isConnected: p.isConnected,
       })),
-      game: room.game
-        ? {
-            phase: room.game.phase,
-            topic: isAnswerer ? null : room.game.topic,
-            answererId: room.game.answererId,
-            hints:
-              room.game.phase === 'HINTING'
-                ? room.game.hints.map((h) => ({
-                    playerId: h.playerId,
-                    playerName: h.playerName,
-                    text: null,
-                    isValid: true,
-                  }))
-                : room.game.hints.map((h) => ({
-                    playerId: h.playerId,
-                    playerName: h.playerName,
-                    text: h.isValid ? h.text : null,
-                    isValid: h.isValid,
-                  })),
-            answer: room.game.answer,
-            isCorrect: room.game.isCorrect,
-            round: room.game.round,
-          }
-        : null,
+      gameType: room.gameType,
+      game: null,
+    };
+
+    if (!room.game) {
+      return baseState;
+    }
+
+    switch (room.game.type) {
+      case 'one-hint':
+        return {
+          ...baseState,
+          game: this.transformOneHintGameForPlayer(room.game, playerId),
+        };
+      default:
+        return baseState;
+    }
+  }
+
+  private transformOneHintGameForPlayer(
+    game: OneHintGame,
+    playerId: string,
+  ): Record<string, unknown> {
+    const isAnswerer = game.answererId === playerId;
+
+    return {
+      type: game.type,
+      phase: game.phase,
+      round: game.round,
+      answererId: game.answererId,
+      topic: isAnswerer ? null : game.topic,
+      hints:
+        game.phase === 'HINTING'
+          ? game.hints.map((h) => ({
+              playerId: h.playerId,
+              playerName: h.playerName,
+              text: null,
+              isValid: true,
+            }))
+          : game.hints.map((h) => ({
+              playerId: h.playerId,
+              playerName: h.playerName,
+              text: h.isValid ? h.text : null,
+              isValid: h.isValid,
+            })),
+      answer: game.answer,
+      isCorrect: game.isCorrect,
     };
   }
 

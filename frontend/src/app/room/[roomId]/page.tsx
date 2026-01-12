@@ -7,6 +7,7 @@ import { LobbyView } from '@/components/lobby/LobbyView';
 import { HintingPhase } from '@/components/game/HintingPhase';
 import { GuessingPhase } from '@/components/game/GuessingPhase';
 import { ResultPhase } from '@/components/game/ResultPhase';
+import { OneHintGame } from '@/types/game';
 
 const PLAYER_ID_KEY = 'partybox_player_id';
 const PLAYER_NAME_KEY = 'partybox_player_name';
@@ -92,6 +93,74 @@ export default function RoomPage() {
     submitAnswer(roomId, playerId, answer);
   const handleNextRound = () => nextRound(roomId, playerId);
 
+  const renderGame = () => {
+    if (!game) {
+      return (
+        <LobbyView
+          roomId={roomId}
+          players={roomState.players}
+          currentPlayerId={playerId}
+          isHost={isHost}
+          gameType={roomState.gameType}
+          onStartGame={handleStartGame}
+        />
+      );
+    }
+
+    switch (game.type) {
+      case 'one-hint':
+        return renderOneHintGame(game);
+      default:
+        return <p>不明なゲームタイプ</p>;
+    }
+  };
+
+  const renderOneHintGame = (game: OneHintGame) => {
+    switch (game.phase) {
+      case 'HINTING':
+        return (
+          <HintingPhase
+            roomId={roomId}
+            players={roomState.players}
+            currentPlayerId={playerId}
+            answererId={game.answererId}
+            topic={game.topic}
+            hints={game.hints}
+            round={game.round}
+            onSubmitHint={handleSubmitHint}
+          />
+        );
+      case 'GUESSING':
+        return (
+          <GuessingPhase
+            roomId={roomId}
+            players={roomState.players}
+            currentPlayerId={playerId}
+            answererId={game.answererId}
+            hints={game.hints}
+            round={game.round}
+            onSubmitAnswer={handleSubmitAnswer}
+          />
+        );
+      case 'RESULT':
+        return (
+          <ResultPhase
+            roomId={roomId}
+            players={roomState.players}
+            currentPlayerId={playerId}
+            answererId={game.answererId}
+            topic={game.topic}
+            hints={game.hints}
+            answer={game.answer}
+            isCorrect={game.isCorrect}
+            round={game.round}
+            isHost={isHost}
+            onNextRound={handleNextRound}
+          />
+        );
+    }
+  };
+
   return (
     <main className="flex min-h-screen flex-col items-center p-8">
       <div className="w-full max-w-md">
@@ -120,56 +189,7 @@ export default function RoomPage() {
           </div>
         )}
 
-        {!game && (
-          <LobbyView
-            roomId={roomId}
-            players={roomState.players}
-            currentPlayerId={playerId}
-            isHost={isHost}
-            onStartGame={handleStartGame}
-          />
-        )}
-
-        {game?.phase === 'HINTING' && (
-          <HintingPhase
-            roomId={roomId}
-            players={roomState.players}
-            currentPlayerId={playerId}
-            answererId={game.answererId}
-            topic={game.topic}
-            hints={game.hints}
-            round={game.round}
-            onSubmitHint={handleSubmitHint}
-          />
-        )}
-
-        {game?.phase === 'GUESSING' && (
-          <GuessingPhase
-            roomId={roomId}
-            players={roomState.players}
-            currentPlayerId={playerId}
-            answererId={game.answererId}
-            hints={game.hints}
-            round={game.round}
-            onSubmitAnswer={handleSubmitAnswer}
-          />
-        )}
-
-        {game?.phase === 'RESULT' && (
-          <ResultPhase
-            roomId={roomId}
-            players={roomState.players}
-            currentPlayerId={playerId}
-            answererId={game.answererId}
-            topic={game.topic}
-            hints={game.hints}
-            answer={game.answer}
-            isCorrect={game.isCorrect}
-            round={game.round}
-            isHost={isHost}
-            onNextRound={handleNextRound}
-          />
-        )}
+        {renderGame()}
       </div>
     </main>
   );
