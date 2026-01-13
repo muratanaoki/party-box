@@ -4,6 +4,10 @@ import {
   GAME_REPOSITORY,
 } from '../../domain/repository/i-game.repository';
 import {
+  IHintJudgeService,
+  HINT_JUDGE_SERVICE,
+} from '../../domain/service/i-hint-judge.service';
+import {
   OneHintGame,
   resetGameForNextRound,
 } from '../../domain/model/games/one-hint/one-hint.game';
@@ -50,6 +54,8 @@ export class NextRoundUseCase {
   constructor(
     @Inject(GAME_REPOSITORY)
     private readonly gameRepository: IGameRepository,
+    @Inject(HINT_JUDGE_SERVICE)
+    private readonly hintJudgeService: IHintJudgeService,
   ) {}
 
   async execute(dto: NextRoundDto): Promise<Room> {
@@ -86,7 +92,9 @@ export class NextRoundUseCase {
       (currentAnswererIndex + 1) % connectedPlayers.length;
     const nextAnswerer = connectedPlayers[nextAnswererIndex];
 
-    const updatedGame = resetGameForNextRound(game, nextAnswerer.id);
+    // AIで新しいお題を生成
+    const newTopic = await this.hintJudgeService.generateTopic();
+    const updatedGame = resetGameForNextRound(game, nextAnswerer.id, newTopic);
 
     const updatedRoom: Room = {
       ...room,

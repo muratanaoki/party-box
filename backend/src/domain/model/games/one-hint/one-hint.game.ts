@@ -19,51 +19,7 @@ export interface OneHintGame extends GameBase {
   isCorrect: boolean | null;
 }
 
-const WORD_LIST: string[] = [
-  'りんご',
-  'バナナ',
-  '電車',
-  '飛行機',
-  '富士山',
-  '桜',
-  '寿司',
-  'ラーメン',
-  '猫',
-  '犬',
-  '太陽',
-  '月',
-  '海',
-  '山',
-  '学校',
-  '病院',
-  'コンビニ',
-  '図書館',
-  'サッカー',
-  '野球',
-  'ピアノ',
-  'ギター',
-  '雪',
-  '雨',
-  '虹',
-  '星',
-  '花火',
-  'カレー',
-  '自転車',
-  'スマホ',
-  'テレビ',
-  '冷蔵庫',
-  '傘',
-  'メガネ',
-  '時計',
-  '財布',
-  'カメラ',
-  '本',
-  'ペン',
-  'コーヒー',
-];
-
-export function createOneHintGame(answererId: string): OneHintGame {
-  const topic = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
+export function createOneHintGame(answererId: string, topic: string): OneHintGame {
   return {
     type: 'one-hint',
     phase: 'HINTING',
@@ -148,12 +104,12 @@ export function submitAnswer(game: OneHintGame, answer: string): OneHintGame {
 export function resetGameForNextRound(
   game: OneHintGame,
   newAnswererId: string,
+  newTopic: string,
 ): OneHintGame {
-  const topic = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
   return {
     type: 'one-hint',
     phase: 'HINTING',
-    topic,
+    topic: newTopic,
     answererId: newAnswererId,
     hints: [],
     answer: null,

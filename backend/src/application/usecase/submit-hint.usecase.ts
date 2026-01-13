@@ -45,6 +45,13 @@ export class InvalidGameTypeError extends Error {
   }
 }
 
+export class InvalidHintFormatError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidHintFormatError';
+  }
+}
+
 @Injectable()
 export class SubmitHintUseCase {
   constructor(
@@ -78,6 +85,18 @@ export class SubmitHintUseCase {
     const player = room.players.find((p) => p.id === dto.playerId);
     if (!player) {
       throw new Error('Player not found in room');
+    }
+
+    // ヒント形式をAIでバリデーション（1単語チェック）
+    const formatValidation = await this.hintJudgeService.validateHintFormat(dto.hint);
+    if (!formatValidation.isValid) {
+      throw new InvalidHintFormatError(formatValidation.error || 'ヒントは1単語で入力してください');
+    }
+
+    // お題に対するヒントの有効性チェック（お題を含むヒントなど）
+    const topicValidation = await this.hintJudgeService.validateHintAgainstTopic(game.topic, dto.hint);
+    if (!topicValidation.isValid) {
+      throw new InvalidHintFormatError(topicValidation.error || 'このヒントは使用できません。別のヒントを入力してください');
     }
 
     let updatedGame = submitHint(game, dto.playerId, player.name, dto.hint);

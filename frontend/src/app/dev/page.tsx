@@ -1,48 +1,51 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function DevPage() {
-  const [roomId, setRoomId] = useState('');
   const [playerCount, setPlayerCount] = useState(3);
   const [started, setStarted] = useState(false);
+  const [sharedRoomId, setSharedRoomId] = useState<string | null>(null);
+  const iframeRefs = useRef<(HTMLIFrameElement | null)[]>([]);
+
+  // Player 1が部屋を作成したらroomIdを取得して他プレイヤーに共有
+  useEffect(() => {
+    if (!started) return;
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'ROOM_CREATED' && event.data?.roomId) {
+        setSharedRoomId(event.data.roomId);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [started]);
 
   if (!started) {
     return (
-      <main className="min-h-screen bg-slate-100 p-4">
-        <div className="max-w-sm mx-auto pt-12">
-          <div className="mb-6">
-            <h1 className="text-xl font-bold text-slate-800">Dev Mode</h1>
-            <p className="text-slate-500 text-sm mt-1">複数プレイヤーを1画面でテスト</p>
+      <main className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-white">Dev Mode</h1>
+            <p className="text-slate-400 mt-2">複数プレイヤーを1画面でテスト</p>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-4">
+          <div className="bg-slate-800/50 backdrop-blur rounded-2xl border border-slate-700 p-6 space-y-6">
             <div>
-              <label className="block text-xs text-slate-500 mb-1.5">ルームID（空欄で新規）</label>
-              <input
-                type="text"
-                value={roomId}
-                onChange={(e) => setRoomId(e.target.value.toUpperCase())}
-                placeholder="ABCD"
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm uppercase"
-                maxLength={4}
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs text-slate-500 mb-1.5">プレイヤー数: {playerCount}人</label>
-              <div className="flex gap-2">
+              <label className="block text-sm font-medium text-slate-300 mb-3">プレイヤー数</label>
+              <div className="grid grid-cols-4 gap-2">
                 {[2, 3, 4, 5].map((n) => (
                   <button
                     key={n}
                     onClick={() => setPlayerCount(n)}
-                    className={`flex-1 py-2 rounded-lg text-sm ${
+                    className={`py-3 rounded-xl text-lg font-bold transition-all ${
                       playerCount === n
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-slate-100 text-slate-600'
+                        ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30'
+                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                     }`}
                   >
-                    {n}
+                    {n}人
                   </button>
                 ))}
               </div>
@@ -50,43 +53,86 @@ export default function DevPage() {
 
             <button
               onClick={() => setStarted(true)}
-              className="w-full py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-medium"
+              className="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-xl text-lg font-bold transition-all shadow-lg"
             >
-              開始
+              テスト開始
             </button>
+
+            <p className="text-slate-500 text-sm text-center">
+              Player 1で部屋を作成すると、他のプレイヤーは自動で参加します
+            </p>
           </div>
         </div>
       </main>
     );
   }
 
-  const baseUrl = roomId ? `/one-hint/room/${roomId}` : '/one-hint';
+  // Player 1は新規作成、Player 2以降はsharedRoomIdがあればそこに参加
+  const getPlayerUrl = (index: number) => {
+    const devParam = `dev=${index + 1}`;
+    if (index === 0) {
+      // Player 1は常にロビーから開始（部屋作成）
+      return `/one-hint?${devParam}`;
+    } else if (sharedRoomId) {
+      // 他プレイヤーはroomIdがあれば直接参加
+      return `/one-hint?room=${sharedRoomId}&${devParam}`;
+    } else {
+      // roomIdがまだない場合はロビーで待機
+      return `/one-hint?${devParam}`;
+    }
+  };
 
   return (
-    <main className="min-h-screen bg-slate-200 p-2">
-      <div className="flex items-center justify-between mb-2 px-2">
-        <span className="text-slate-600 text-sm font-medium">Dev - {playerCount}人</span>
+    <main className="h-screen bg-slate-900 flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
+        <div className="flex items-center gap-4">
+          <span className="text-white font-bold">Dev Mode</span>
+          <span className="text-slate-400 text-sm">{playerCount}人テスト中</span>
+          {sharedRoomId && (
+            <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded text-sm">
+              Room: {sharedRoomId}
+            </span>
+          )}
+        </div>
         <button
-          onClick={() => setStarted(false)}
-          className="text-slate-500 hover:text-slate-700 text-sm"
+          onClick={() => {
+            setStarted(false);
+            setSharedRoomId(null);
+          }}
+          className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm transition-colors"
         >
           リセット
         </button>
       </div>
 
+      {/* Player Grid - 横並び */}
       <div
-        className="grid gap-2"
-        style={{ gridTemplateColumns: `repeat(${Math.min(playerCount, 3)}, 1fr)` }}
+        className="flex-1 grid gap-2 p-2"
+        style={{
+          gridTemplateColumns: `repeat(${playerCount}, 1fr)`,
+          gridTemplateRows: '1fr',
+        }}
       >
         {Array.from({ length: playerCount }, (_, i) => (
-          <div key={i} className="relative bg-white rounded-lg overflow-hidden">
-            <div className="absolute top-1 left-1 z-10 bg-slate-800 text-white px-2 py-0.5 rounded text-xs">
-              P{i + 1}
+          <div
+            key={i === 0 ? 'player-1' : `${i}-${sharedRoomId || 'none'}`}
+            className="relative bg-slate-800 rounded-lg overflow-hidden flex flex-col"
+          >
+            {/* Player Label */}
+            <div className={`px-3 py-1.5 text-sm font-medium ${
+              i === 0
+                ? 'bg-indigo-500 text-white'
+                : 'bg-slate-700 text-slate-300'
+            }`}>
+              Player {i + 1} {i === 0 && '(ホスト)'}
             </div>
+
+            {/* Iframe */}
             <iframe
-              src={`${baseUrl}?dev=${i + 1}`}
-              className="w-full border-0"
-              style={{ height: 'calc(50vh - 24px)' }}
+              ref={(el) => { iframeRefs.current[i] = el; }}
+              src={getPlayerUrl(i)}
+              className="flex-1 w-full border-0 bg-white"
               sandbox="allow-scripts allow-same-origin allow-forms"
             />
           </div>

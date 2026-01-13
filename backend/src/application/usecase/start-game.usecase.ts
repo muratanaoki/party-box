@@ -3,6 +3,10 @@ import {
   IGameRepository,
   GAME_REPOSITORY,
 } from '../../domain/repository/i-game.repository';
+import {
+  IHintJudgeService,
+  HINT_JUDGE_SERVICE,
+} from '../../domain/service/i-hint-judge.service';
 import { GameType, GAME_CONFIGS } from '../../domain/model/game-base';
 import { createOneHintGame } from '../../domain/model/games/one-hint/one-hint.game';
 import { getHost, Room } from '../../domain/model/room';
@@ -34,6 +38,8 @@ export class StartGameUseCase {
   constructor(
     @Inject(GAME_REPOSITORY)
     private readonly gameRepository: IGameRepository,
+    @Inject(HINT_JUDGE_SERVICE)
+    private readonly hintJudgeService: IHintJudgeService,
   ) {}
 
   async execute(dto: StartGameDto): Promise<Room> {
@@ -57,7 +63,7 @@ export class StartGameUseCase {
     const randomIndex = Math.floor(Math.random() * connectedPlayers.length);
     const answerer = connectedPlayers[randomIndex];
 
-    const game = this.createGameByType(room.gameType, answerer.id);
+    const game = await this.createGameByType(room.gameType, answerer.id);
 
     const updatedRoom: Room = {
       ...room,
@@ -69,10 +75,11 @@ export class StartGameUseCase {
     return updatedRoom;
   }
 
-  private createGameByType(gameType: GameType, answererId: string) {
+  private async createGameByType(gameType: GameType, answererId: string) {
     switch (gameType) {
       case 'one-hint':
-        return createOneHintGame(answererId);
+        const topic = await this.hintJudgeService.generateTopic();
+        return createOneHintGame(answererId, topic);
       default:
         throw new Error(`Unknown game type: ${gameType}`);
     }

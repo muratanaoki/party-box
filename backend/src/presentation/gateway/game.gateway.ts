@@ -256,27 +256,46 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     playerId: string,
   ): Record<string, unknown> {
     const isAnswerer = game.answererId === playerId;
+    const isResultPhase = game.phase === 'RESULT';
+
+    // お題: 結果画面では全員に表示、それ以外は回答者には非表示
+    const topic = isResultPhase ? game.topic : (isAnswerer ? null : game.topic);
+
+    // ヒント: フェーズによって表示内容を変える
+    let hints;
+    if (game.phase === 'HINTING') {
+      // ヒント中: 誰が出したかだけ表示（内容は隠す）
+      hints = game.hints.map((h) => ({
+        playerId: h.playerId,
+        playerName: h.playerName,
+        text: null,
+        isValid: true,
+      }));
+    } else if (game.phase === 'GUESSING') {
+      // 回答中: 有効なヒントのみ内容表示、無効は隠す
+      hints = game.hints.map((h) => ({
+        playerId: h.playerId,
+        playerName: h.playerName,
+        text: h.isValid ? h.text : null,
+        isValid: h.isValid,
+      }));
+    } else {
+      // 結果: 全てのヒント内容を表示（無効も含む）
+      hints = game.hints.map((h) => ({
+        playerId: h.playerId,
+        playerName: h.playerName,
+        text: h.text,
+        isValid: h.isValid,
+      }));
+    }
 
     return {
       type: game.type,
       phase: game.phase,
       round: game.round,
       answererId: game.answererId,
-      topic: isAnswerer ? null : game.topic,
-      hints:
-        game.phase === 'HINTING'
-          ? game.hints.map((h) => ({
-              playerId: h.playerId,
-              playerName: h.playerName,
-              text: null,
-              isValid: true,
-            }))
-          : game.hints.map((h) => ({
-              playerId: h.playerId,
-              playerName: h.playerName,
-              text: h.isValid ? h.text : null,
-              isValid: h.isValid,
-            })),
+      topic,
+      hints,
       answer: game.answer,
       isCorrect: game.isCorrect,
     };

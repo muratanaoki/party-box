@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
 import Link from 'next/link';
@@ -21,13 +21,17 @@ export default function OneHintLobby() {
   const { isConnected, createRoom, joinRoom, error, clearError } = useSocket();
 
   const devId = searchParams.get('dev');
+  const roomFromUrl = searchParams.get('room');
   const { PLAYER_ID_KEY, PLAYER_NAME_KEY } = getStorageKeys(devId);
 
   const [playerName, setPlayerName] = useState('');
   const [roomIdInput, setRoomIdInput] = useState('');
   const [playerId, setPlayerId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [autoJoinAttempted, setAutoJoinAttempted] = useState(false);
+  const isComposingRef = useRef(false);
 
+  // 初期化
   useEffect(() => {
     let id = localStorage.getItem(PLAYER_ID_KEY);
     if (!id) {
@@ -40,21 +44,36 @@ export default function OneHintLobby() {
     if (savedName) {
       setPlayerName(savedName);
     } else if (devId) {
-      setPlayerName(`Player ${devId}`);
+      const autoName = `Player ${devId}`;
+      setPlayerName(autoName);
+      localStorage.setItem(PLAYER_NAME_KEY, autoName);
     }
 
-    const roomFromUrl = searchParams.get('room');
     if (roomFromUrl) {
       setRoomIdInput(roomFromUrl.toUpperCase());
     }
-  }, [searchParams, PLAYER_ID_KEY, PLAYER_NAME_KEY, devId]);
+  }, [searchParams, PLAYER_ID_KEY, PLAYER_NAME_KEY, devId, roomFromUrl]);
 
+  // URLにroomがあり、名前があれば自動参加
+  useEffect(() => {
+    if (roomFromUrl && playerId && playerName && isConnected && !autoJoinAttempted) {
+      setAutoJoinAttempted(true);
+      setIsLoading(true);
+      joinRoom(roomFromUrl.toUpperCase(), playerId, playerName);
+    }
+  }, [roomFromUrl, playerId, playerName, isConnected, autoJoinAttempted, joinRoom]);
+
+  // Socket イベント
   useEffect(() => {
     const socket = getSocket();
     const devParam = devId ? `?dev=${devId}` : '';
 
     function onRoomCreated(data: { roomId: string }) {
       setIsLoading(false);
+      // Dev modeの場合、親ウィンドウにroomIdを通知
+      if (devId && window.parent !== window) {
+        window.parent.postMessage({ type: 'ROOM_CREATED', roomId: data.roomId }, '*');
+      }
       router.push(`/one-hint/room/${data.roomId}${devParam}`);
     }
 
@@ -79,110 +98,165 @@ export default function OneHintLobby() {
   }, [router, devId]);
 
   const handleCreateRoom = () => {
-    if (!playerName.trim()) {
-      return;
-    }
+    if (!playerName.trim() || isLoading) return;
     localStorage.setItem(PLAYER_NAME_KEY, playerName.trim());
     setIsLoading(true);
     createRoom(playerId, playerName.trim(), 'one-hint');
   };
 
   const handleJoinRoom = () => {
-    if (!playerName.trim() || !roomIdInput.trim()) {
-      return;
-    }
+    if (!playerName.trim() || !roomIdInput.trim() || isLoading) return;
     localStorage.setItem(PLAYER_NAME_KEY, playerName.trim());
     setIsLoading(true);
     joinRoom(roomIdInput.trim().toUpperCase(), playerId, playerName.trim());
   };
 
+  const handleRoomIdKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !isComposingRef.current) {
+      e.preventDefault();
+      handleJoinRoom();
+    }
+  };
+
+  // Dev modeでURLにroomがあり自動参加中の場合
+  if (devId && roomFromUrl && isLoading) {
+    return (
+      <main className="min-h-screen bg-gradient-to-b from-indigo-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+          <p className="text-slate-600">参加中...</p>
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <main className="min-h-screen bg-slate-50 p-4">
-      <div className="max-w-sm mx-auto pt-8">
-        <div className="flex items-center justify-between mb-6">
-          <Link href="/" className="text-slate-400 hover:text-slate-600 text-sm">
-            ← 戻る
+    <main className="min-h-screen bg-gradient-to-b from-indigo-50 to-white">
+      <div className="max-w-md mx-auto px-4 py-8">
+        {/* Header */}
+        {!devId && (
+          <Link href="/" className="inline-flex items-center text-slate-500 hover:text-slate-700 text-sm mb-6">
+            ← ゲーム選択
           </Link>
-          {isConnected ? (
-            <span className="text-green-600 text-xs">● 接続中</span>
-          ) : (
-            <span className="text-orange-500 text-xs">● 接続中...</span>
-          )}
+        )}
+
+        {/* Title */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-slate-900">One Hint</h1>
+          <p className="text-slate-500 mt-2">AIが審判の協力型ワードゲーム</p>
+          <div className="mt-3">
+            {isConnected ? (
+              <span className="inline-flex items-center gap-1.5 text-green-600 text-sm">
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                接続済み
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-amber-600 text-sm">
+                <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
+                接続中...
+              </span>
+            )}
+          </div>
         </div>
 
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-800">One Hint</h1>
-          <p className="text-slate-500 text-sm mt-1">AIが審判の協力型ワードゲーム</p>
-        </div>
-
+        {/* Error */}
         {error && (
-          <div className="bg-red-50 text-red-600 px-3 py-2 rounded-lg mb-4 text-sm flex justify-between items-center">
-            <span>{error}</span>
-            <button onClick={clearError} className="text-red-400 hover:text-red-600 ml-2">✕</button>
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 flex justify-between items-center">
+            <span className="text-sm">{error}</span>
+            <button onClick={clearError} className="text-red-400 hover:text-red-600 text-lg leading-none">×</button>
           </div>
         )}
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-4">
+        {/* Main Card */}
+        <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 space-y-5">
+          {/* Name Input */}
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1.5">名前</label>
+            <label className="block text-sm font-medium text-slate-700 mb-2">あなたの名前</label>
             <input
               type="text"
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
-              placeholder="あなたの名前"
-              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="名前を入力"
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
               maxLength={20}
+              disabled={isLoading}
             />
           </div>
 
+          {/* Create Room */}
           <button
             onClick={handleCreateRoom}
             disabled={!playerName.trim() || !isConnected || isLoading}
-            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg text-sm font-medium transition-colors"
+            className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-semibold transition-colors shadow-sm"
           >
             {isLoading ? '作成中...' : '新しい部屋を作成'}
           </button>
 
-          <div className="relative py-2">
+          {/* Divider */}
+          <div className="relative py-1">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-slate-200"></div>
             </div>
             <div className="relative flex justify-center">
-              <span className="px-2 bg-white text-slate-400 text-xs">または</span>
+              <span className="px-3 bg-white text-slate-400 text-sm">または</span>
             </div>
           </div>
 
+          {/* Join Room */}
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1.5">ルームIDで参加</label>
+            <label className="block text-sm font-medium text-slate-700 mb-2">部屋IDで参加</label>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={roomIdInput}
                 onChange={(e) => setRoomIdInput(e.target.value.toUpperCase())}
+                onKeyDown={handleRoomIdKeyDown}
+                onCompositionStart={() => { isComposingRef.current = true; }}
+                onCompositionEnd={() => { isComposingRef.current = false; }}
                 placeholder="ABCD"
-                className="flex-1 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent uppercase text-center font-mono tracking-wider"
+                className="min-w-0 flex-1 px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-center text-base font-mono tracking-wider uppercase focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 maxLength={4}
+                disabled={isLoading}
               />
               <button
                 onClick={handleJoinRoom}
                 disabled={!playerName.trim() || !roomIdInput.trim() || !isConnected || isLoading}
-                className="px-5 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg text-sm font-medium transition-colors"
+                className="shrink-0 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-semibold transition-colors"
               >
-                参加
+                {isLoading ? '...' : '参加'}
               </button>
             </div>
           </div>
         </div>
 
-        <details className="mt-4 text-sm">
-          <summary className="text-slate-500 cursor-pointer hover:text-slate-700">遊び方を見る</summary>
-          <ol className="mt-3 space-y-1.5 text-slate-600 pl-4 list-decimal list-inside">
-            <li>1人が回答者になり、お題を見れない</li>
-            <li>他のプレイヤーは1単語ずつヒントを出す</li>
-            <li>AIが重複ヒントを判定して無効化</li>
-            <li>回答者は有効なヒントだけを見て答える</li>
-          </ol>
-        </details>
+        {/* How to play */}
+        {!devId && (
+          <details className="mt-6">
+            <summary className="text-slate-500 cursor-pointer hover:text-slate-700 text-sm font-medium">
+              遊び方
+            </summary>
+            <div className="mt-3 bg-white rounded-xl border border-slate-200 p-4">
+              <ol className="space-y-2 text-sm text-slate-600">
+                <li className="flex gap-2">
+                  <span className="text-indigo-500 font-medium">1.</span>
+                  1人が回答者になり、お題を見れない
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-indigo-500 font-medium">2.</span>
+                  他のプレイヤーは1単語ずつヒントを出す
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-indigo-500 font-medium">3.</span>
+                  AIが重複ヒントを判定して無効化
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-indigo-500 font-medium">4.</span>
+                  回答者は有効なヒントだけを見て答える
+                </li>
+              </ol>
+            </div>
+          </details>
+        )}
       </div>
     </main>
   );

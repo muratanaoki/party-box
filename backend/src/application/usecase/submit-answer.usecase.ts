@@ -4,8 +4,11 @@ import {
   GAME_REPOSITORY,
 } from '../../domain/repository/i-game.repository';
 import {
+  IHintJudgeService,
+  HINT_JUDGE_SERVICE,
+} from '../../domain/service/i-hint-judge.service';
+import {
   OneHintGame,
-  submitAnswer,
 } from '../../domain/model/games/one-hint/one-hint.game';
 import { Room } from '../../domain/model/room';
 import { SubmitAnswerDto } from '../dto/game-action.dto';
@@ -50,6 +53,8 @@ export class SubmitAnswerUseCase {
   constructor(
     @Inject(GAME_REPOSITORY)
     private readonly gameRepository: IGameRepository,
+    @Inject(HINT_JUDGE_SERVICE)
+    private readonly hintJudgeService: IHintJudgeService,
   ) {}
 
   async execute(dto: SubmitAnswerDto): Promise<Room> {
@@ -77,7 +82,15 @@ export class SubmitAnswerUseCase {
       throw new NotAnswererError();
     }
 
-    const updatedGame = submitAnswer(game, dto.answer);
+    // AIで回答を判定（漢字/ひらがな/カタカナの表記ゆれを考慮）
+    const judgment = await this.hintJudgeService.judgeAnswer(game.topic, dto.answer);
+
+    const updatedGame: OneHintGame = {
+      ...game,
+      phase: 'RESULT',
+      answer: dto.answer,
+      isCorrect: judgment.isCorrect,
+    };
 
     const updatedRoom: Room = {
       ...room,

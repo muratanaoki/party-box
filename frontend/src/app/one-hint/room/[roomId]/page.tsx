@@ -66,27 +66,36 @@ export default function OneHintRoomPage() {
 
   if (!playerId || !playerName) {
     return (
-      <main className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <p className="text-slate-500 text-sm">リダイレクト中...</p>
+      <main className="min-h-screen bg-gradient-to-b from-indigo-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+          <p className="text-slate-600">リダイレクト中...</p>
+        </div>
       </main>
     );
   }
 
   if (!roomState) {
     return (
-      <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <main className="min-h-screen bg-gradient-to-b from-indigo-50 to-white flex items-center justify-center p-4">
         {error ? (
-          <div className="text-center">
+          <div className="text-center bg-white rounded-2xl shadow-lg p-8 max-w-sm">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-red-500 text-xl">!</span>
+            </div>
             <p className="text-red-600 mb-4">{error}</p>
             <button
               onClick={() => router.push('/one-hint')}
-              className="text-slate-500 hover:text-slate-700 text-sm"
+              className="text-indigo-600 hover:text-indigo-700 font-medium"
             >
               ← ロビーに戻る
             </button>
           </div>
         ) : (
-          <p className="text-slate-500 text-sm">接続中...</p>
+          <div className="text-center">
+            <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+            <p className="text-slate-600">接続中...</p>
+          </div>
         )}
       </main>
     );
@@ -98,8 +107,7 @@ export default function OneHintRoomPage() {
 
   const handleStartGame = () => startGame(roomId, playerId);
   const handleSubmitHint = (hint: string) => submitHint(roomId, playerId, hint);
-  const handleSubmitAnswer = (answer: string) =>
-    submitAnswer(roomId, playerId, answer);
+  const handleSubmitAnswer = (answer: string) => submitAnswer(roomId, playerId, answer);
   const handleNextRound = () => nextRound(roomId, playerId);
 
   const renderGame = () => {
@@ -167,23 +175,34 @@ export default function OneHintRoomPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4">
-      <div className="max-w-sm mx-auto">
-        <div className="flex items-center justify-between mb-4 pt-2">
-          <Link href="/one-hint" className="text-slate-400 hover:text-slate-600 text-sm">
-            ← 退出
-          </Link>
+    <main className="min-h-screen bg-gradient-to-b from-indigo-50 to-white">
+      <div className="max-w-md mx-auto px-4 py-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          {!devId && (
+            <Link href="/one-hint" className="text-slate-500 hover:text-slate-700 text-sm">
+              ← 退出
+            </Link>
+          )}
+          {devId && <div />}
           {isConnected ? (
-            <span className="text-green-600 text-xs">● 接続中</span>
+            <span className="inline-flex items-center gap-1.5 text-green-600 text-xs">
+              <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+              接続中
+            </span>
           ) : (
-            <span className="text-orange-500 text-xs">● 再接続中...</span>
+            <span className="inline-flex items-center gap-1.5 text-amber-600 text-xs">
+              <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
+              再接続中...
+            </span>
           )}
         </div>
 
+        {/* Error */}
         {error && (
-          <div className="bg-red-50 text-red-600 px-3 py-2 rounded-lg mb-4 text-sm flex justify-between items-center">
-            <span>{error}</span>
-            <button onClick={clearError} className="text-red-400 hover:text-red-600 ml-2">✕</button>
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 flex justify-between items-center">
+            <span className="text-sm">{error}</span>
+            <button onClick={clearError} className="text-red-400 hover:text-red-600 text-lg leading-none">×</button>
           </div>
         )}
 

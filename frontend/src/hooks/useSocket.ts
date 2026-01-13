@@ -39,6 +39,8 @@ export function useSocket(): UseSocketReturn {
 
     function onError(data: { message: string }) {
       setError(data.message);
+      // 3秒後に自動でエラーを消す
+      setTimeout(() => setError(null), 3000);
     }
 
     socket.on('connect', onConnect);

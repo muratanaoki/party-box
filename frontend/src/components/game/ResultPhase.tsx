@@ -32,41 +32,55 @@ export function ResultPhase({
 
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div className="text-center">
-        <p className="text-slate-500 text-xs">ラウンド {round} 結果</p>
+        <span className="inline-block bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-sm font-medium">
+          ラウンド {round} 結果
+        </span>
       </div>
 
-      <div className={`rounded-xl p-6 text-center ${isCorrect ? 'bg-green-500' : 'bg-red-500'}`}>
-        <p className="text-4xl mb-2">{isCorrect ? '🎉' : '😢'}</p>
-        <p className="text-white text-xl font-bold">{isCorrect ? '正解!' : '不正解...'}</p>
+      {/* Result Banner */}
+      <div className={`rounded-2xl p-8 text-center shadow-lg ${
+        isCorrect
+          ? 'bg-gradient-to-br from-green-400 to-emerald-500'
+          : 'bg-gradient-to-br from-red-400 to-rose-500'
+      }`}>
+        <p className="text-5xl mb-3">{isCorrect ? '🎉' : '😢'}</p>
+        <p className="text-white text-2xl font-bold">{isCorrect ? '正解!' : '不正解...'}</p>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
-        <p className="text-slate-500 text-xs">お題</p>
-        <p className="text-slate-800 text-xl font-bold mt-1">{topic}</p>
-        <div className="border-t border-slate-100 mt-3 pt-3">
-          <p className="text-slate-500 text-xs">{answererName}の回答</p>
-          <p className="text-slate-700 font-medium mt-1">{answer}</p>
+      {/* Topic & Answer */}
+      <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-5">
+        <div className="text-center pb-4 border-b border-slate-100">
+          <p className="text-slate-500 text-sm mb-1">お題</p>
+          <p className="text-slate-800 text-2xl font-bold">{topic}</p>
+        </div>
+        <div className="text-center pt-4">
+          <p className="text-slate-500 text-sm mb-1">{answererName}の回答</p>
+          <p className="text-slate-700 text-xl font-semibold">{answer}</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 p-4">
-        <p className="text-slate-500 text-xs mb-2">ヒント一覧</p>
-        <div className="space-y-1.5">
+      {/* Hints */}
+      <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-5">
+        <p className="text-slate-600 text-sm mb-3">ヒント一覧</p>
+        <div className="space-y-2">
           {hints.map((hint, i) => (
             <div
               key={i}
-              className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
+              className={`flex items-center justify-between px-4 py-3 rounded-xl ${
                 hint.isValid ? 'bg-green-50' : 'bg-red-50'
               }`}
             >
               <div>
-                <span className="text-slate-500">{hint.playerName}: </span>
-                <span className={hint.isValid ? 'text-slate-800' : 'text-slate-400 line-through'}>
+                <span className="text-slate-500 text-sm">{hint.playerName}: </span>
+                <span className={`font-medium ${hint.isValid ? 'text-slate-800' : 'text-slate-400 line-through'}`}>
                   {hint.text}
                 </span>
               </div>
-              <span className={`text-xs ${hint.isValid ? 'text-green-600' : 'text-red-500'}`}>
+              <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                hint.isValid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
+              }`}>
                 {hint.isValid ? '有効' : '無効'}
               </span>
             </div>
@@ -74,18 +88,22 @@ export function ResultPhase({
         </div>
       </div>
 
+      {/* Next Round */}
       {isHost ? (
         <button
           onClick={onNextRound}
-          className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium"
+          className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-lg transition-colors shadow-sm"
         >
           次のラウンドへ
         </button>
       ) : (
-        <p className="text-slate-500 text-sm text-center">ホストの操作を待っています...</p>
+        <div className="text-center py-4 text-slate-500">
+          ホストが次のラウンドを開始するのを待っています...
+        </div>
       )}
 
-      <div className="bg-white rounded-xl border border-slate-200 p-4">
+      {/* Player List */}
+      <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-5">
         <PlayerList players={players} currentPlayerId={currentPlayerId} answererId={answererId} />
       </div>
     </div>
