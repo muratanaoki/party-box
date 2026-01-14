@@ -128,6 +128,17 @@ export function finishGame(game: JustOneGame): JustOneGame {
   };
 }
 
+export function regenerateTopic(game: JustOneGame, newTopic: string): JustOneGame {
+  if (game.phase !== 'HINTING') {
+    return game;
+  }
+  return {
+    ...game,
+    topic: newTopic,
+    hints: [], // ヒントもリセット
+  };
+}
+
 export function isLastRound(game: JustOneGame): boolean {
   return game.round >= game.totalRounds;
 }

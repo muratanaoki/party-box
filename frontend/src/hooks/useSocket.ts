@@ -14,6 +14,7 @@ interface UseSocketReturn {
   submitHint: (roomId: string, playerId: string, hint: string) => void;
   submitAnswer: (roomId: string, playerId: string, answer: string) => void;
   nextRound: (roomId: string, playerId: string) => void;
+  regenerateTopic: (roomId: string, playerId: string) => void;
   clearError: () => void;
 }
 
@@ -100,6 +101,11 @@ export function useSocket(): UseSocketReturn {
     socket.emit('next-round', { roomId, playerId });
   }, []);
 
+  const regenerateTopic = useCallback((roomId: string, playerId: string) => {
+    const socket = getSocket();
+    socket.emit('regenerate-topic', { roomId, playerId });
+  }, []);
+
   const clearError = useCallback(() => {
     setError(null);
   }, []);
@@ -114,6 +120,7 @@ export function useSocket(): UseSocketReturn {
     submitHint,
     submitAnswer,
     nextRound,
+    regenerateTopic,
     clearError,
   };
 }

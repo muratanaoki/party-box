@@ -12,7 +12,9 @@ interface HintingPhaseProps {
   topic: string | null;
   hints: Hint[];
   round: number;
+  isHost: boolean;
   onSubmitHint: (hint: string) => void;
+  onRegenerateTopic: () => void;
 }
 
 export function HintingPhase({
@@ -22,7 +24,9 @@ export function HintingPhase({
   topic,
   hints,
   round,
+  isHost,
   onSubmitHint,
+  onRegenerateTopic,
 }: HintingPhaseProps) {
   const [hintInput, setHintInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -80,6 +84,14 @@ export function HintingPhase({
           <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 text-center shadow-lg">
             <p className="text-indigo-100 text-sm mb-1">お題</p>
             <p className="text-white text-3xl font-bold">{topic}</p>
+            {isHost && (
+              <button
+                onClick={onRegenerateTopic}
+                className="mt-3 text-indigo-200 hover:text-white text-sm underline"
+              >
+                お題を出し直す
+              </button>
+            )}
           </div>
 
           {hasSubmitted ? (

@@ -30,6 +30,7 @@ export default function JustOneRoomPage() {
     submitHint,
     submitAnswer,
     nextRound,
+    regenerateTopic,
     clearError,
   } = useSocket();
 
@@ -103,6 +104,7 @@ export default function JustOneRoomPage() {
   const handleSubmitHint = (hint: string) => submitHint(roomId, playerId, hint);
   const handleSubmitAnswer = (answer: string) => submitAnswer(roomId, playerId, answer);
   const handleNextRound = () => nextRound(roomId, playerId);
+  const handleRegenerateTopic = () => regenerateTopic(roomId, playerId);
 
   const renderGame = () => {
     if (!game) {
@@ -136,7 +138,9 @@ export default function JustOneRoomPage() {
             topic={game.topic}
             hints={game.hints}
             round={game.round}
+            isHost={isHost}
             onSubmitHint={handleSubmitHint}
+            onRegenerateTopic={handleRegenerateTopic}
           />
         );
       case 'GUESSING':

@@ -15,6 +15,7 @@ import { StartGameUseCase } from '../../application/usecase/start-game.usecase';
 import { SubmitHintUseCase } from '../../application/usecase/submit-hint.usecase';
 import { SubmitAnswerUseCase } from '../../application/usecase/submit-answer.usecase';
 import { NextRoundUseCase } from '../../application/usecase/next-round.usecase';
+import { RegenerateTopicUseCase } from '../../application/usecase/regenerate-topic.usecase';
 import {
   IGameRepository,
   GAME_REPOSITORY,
@@ -60,6 +61,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly submitHintUseCase: SubmitHintUseCase,
     private readonly submitAnswerUseCase: SubmitAnswerUseCase,
     private readonly nextRoundUseCase: NextRoundUseCase,
+    private readonly regenerateTopicUseCase: RegenerateTopicUseCase,
     @Inject(GAME_REPOSITORY)
     private readonly gameRepository: IGameRepository,
   ) {}
@@ -199,6 +201,23 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ): Promise<void> {
     try {
       const room = await this.nextRoundUseCase.execute({
+        roomId: payload.roomId,
+        playerId: payload.playerId,
+      });
+
+      this.broadcastRoomState(room);
+    } catch (error) {
+      this.emitError(client, error);
+    }
+  }
+
+  @SubscribeMessage('regenerate-topic')
+  async handleRegenerateTopic(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { roomId: string; playerId: string },
+  ): Promise<void> {
+    try {
+      const room = await this.regenerateTopicUseCase.execute({
         roomId: payload.roomId,
         playerId: payload.playerId,
       });

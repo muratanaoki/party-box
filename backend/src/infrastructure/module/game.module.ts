@@ -9,6 +9,7 @@ import { StartGameUseCase } from '../../application/usecase/start-game.usecase';
 import { SubmitHintUseCase } from '../../application/usecase/submit-hint.usecase';
 import { SubmitAnswerUseCase } from '../../application/usecase/submit-answer.usecase';
 import { NextRoundUseCase } from '../../application/usecase/next-round.usecase';
+import { RegenerateTopicUseCase } from '../../application/usecase/regenerate-topic.usecase';
 import { GameGateway } from '../../presentation/gateway/game.gateway';
 
 @Module({
@@ -27,6 +28,7 @@ import { GameGateway } from '../../presentation/gateway/game.gateway';
     SubmitHintUseCase,
     SubmitAnswerUseCase,
     NextRoundUseCase,
+    RegenerateTopicUseCase,
     GameGateway,
   ],
   exports: [GAME_REPOSITORY, HINT_JUDGE_SERVICE],

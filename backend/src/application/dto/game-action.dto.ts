@@ -34,3 +34,8 @@ export interface NextRoundDto {
   roomId: string;
   playerId: string;
 }
+
+export interface RegenerateTopicDto {
+  roomId: string;
+  playerId: string;
+}
