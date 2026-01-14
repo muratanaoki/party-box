@@ -1,6 +1,6 @@
 import { GameBase } from '../../game-base';
 
-export type OneHintPhase = 'HINTING' | 'GUESSING' | 'RESULT';
+export type JustOnePhase = 'HINTING' | 'GUESSING' | 'RESULT' | 'FINISHED';
 
 export interface Hint {
   playerId: string;
@@ -9,19 +9,20 @@ export interface Hint {
   isValid: boolean;
 }
 
-export interface OneHintGame extends GameBase {
-  type: 'one-hint';
-  phase: OneHintPhase;
+export interface JustOneGame extends GameBase {
+  type: 'just-one';
+  phase: JustOnePhase;
   topic: string;
   answererId: string;
   hints: Hint[];
   answer: string | null;
   isCorrect: boolean | null;
+  totalRounds: number;
 }
 
-export function createOneHintGame(answererId: string, topic: string): OneHintGame {
+export function createJustOneGame(answererId: string, topic: string, totalRounds: number = 5): JustOneGame {
   return {
-    type: 'one-hint',
+    type: 'just-one',
     phase: 'HINTING',
     topic,
     answererId,
@@ -29,15 +30,16 @@ export function createOneHintGame(answererId: string, topic: string): OneHintGam
     answer: null,
     isCorrect: null,
     round: 1,
+    totalRounds,
   };
 }
 
 export function submitHint(
-  game: OneHintGame,
+  game: JustOneGame,
   playerId: string,
   playerName: string,
   text: string,
-): OneHintGame {
+): JustOneGame {
   if (game.phase !== 'HINTING') {
     return game;
   }
@@ -62,9 +64,9 @@ export function submitHint(
 }
 
 export function setHintValidity(
-  game: OneHintGame,
+  game: JustOneGame,
   validityMap: Map<string, boolean>,
-): OneHintGame {
+): JustOneGame {
   return {
     ...game,
     hints: game.hints.map((hint) => ({
@@ -74,7 +76,7 @@ export function setHintValidity(
   };
 }
 
-export function transitionToGuessing(game: OneHintGame): OneHintGame {
+export function transitionToGuessing(game: JustOneGame): JustOneGame {
   if (game.phase !== 'HINTING') {
     return game;
   }
@@ -84,7 +86,7 @@ export function transitionToGuessing(game: OneHintGame): OneHintGame {
   };
 }
 
-export function submitAnswer(game: OneHintGame, answer: string): OneHintGame {
+export function submitAnswer(game: JustOneGame, answer: string): JustOneGame {
   if (game.phase !== 'GUESSING') {
     return game;
   }
@@ -102,12 +104,12 @@ export function submitAnswer(game: OneHintGame, answer: string): OneHintGame {
 }
 
 export function resetGameForNextRound(
-  game: OneHintGame,
+  game: JustOneGame,
   newAnswererId: string,
   newTopic: string,
-): OneHintGame {
+): JustOneGame {
   return {
-    type: 'one-hint',
+    type: 'just-one',
     phase: 'HINTING',
     topic: newTopic,
     answererId: newAnswererId,
@@ -115,11 +117,23 @@ export function resetGameForNextRound(
     answer: null,
     isCorrect: null,
     round: game.round + 1,
+    totalRounds: game.totalRounds,
   };
 }
 
+export function finishGame(game: JustOneGame): JustOneGame {
+  return {
+    ...game,
+    phase: 'FINISHED',
+  };
+}
+
+export function isLastRound(game: JustOneGame): boolean {
+  return game.round >= game.totalRounds;
+}
+
 export function allHintsSubmitted(
-  game: OneHintGame,
+  game: JustOneGame,
   totalPlayers: number,
 ): boolean {
   const expectedHints = totalPlayers - 1;

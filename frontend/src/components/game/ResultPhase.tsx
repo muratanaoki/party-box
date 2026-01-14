@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { Player, Hint } from '@/types/game';
 import { PlayerList } from '../common/PlayerList';
+import { Spinner } from '../common/Spinner';
 
 interface ResultPhaseProps {
   players: Player[];
@@ -12,6 +14,7 @@ interface ResultPhaseProps {
   answer: string | null;
   isCorrect: boolean | null;
   round: number;
+  totalRounds: number;
   isHost: boolean;
   onNextRound: () => void;
 }
@@ -25,17 +28,25 @@ export function ResultPhase({
   answer,
   isCorrect,
   round,
+  totalRounds,
   isHost,
   onNextRound,
 }: ResultPhaseProps) {
+  const [isLoading, setIsLoading] = useState(false);
   const answererName = players.find((p) => p.id === answererId)?.name ?? '???';
+  const isLastRound = round >= totalRounds;
+
+  const handleNextRound = () => {
+    setIsLoading(true);
+    onNextRound();
+  };
 
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="text-center">
         <span className="inline-block bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-sm font-medium">
-          ラウンド {round} 結果
+          ラウンド {round}/{totalRounds} 結果
         </span>
       </div>
 
@@ -91,14 +102,26 @@ export function ResultPhase({
       {/* Next Round */}
       {isHost ? (
         <button
-          onClick={onNextRound}
-          className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-lg transition-colors shadow-sm"
+          onClick={handleNextRound}
+          disabled={isLoading}
+          className={`w-full py-4 text-white rounded-xl font-bold text-lg transition-colors shadow-sm flex items-center justify-center gap-2 ${
+            isLastRound
+              ? 'bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300'
+              : 'bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300'
+          }`}
         >
-          次のラウンドへ
+          {isLoading ? (
+            <><Spinner size="sm" /> 読み込み中...</>
+          ) : (
+            isLastRound ? '結果を見る' : '次のラウンドへ'
+          )}
         </button>
       ) : (
-        <div className="text-center py-4 text-slate-500">
-          ホストが次のラウンドを開始するのを待っています...
+        <div className="text-center py-4 text-slate-500 flex items-center justify-center gap-2">
+          <Spinner size="sm" />
+          {isLastRound
+            ? 'ホストが結果画面を表示するのを待っています...'
+            : 'ホストが次のラウンドを開始するのを待っています...'}
         </div>
       )}
 

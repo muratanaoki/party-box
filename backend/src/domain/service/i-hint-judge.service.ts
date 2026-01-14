@@ -1,4 +1,4 @@
-import { Hint } from '../model/games/one-hint/one-hint.game';
+import { Hint } from '../model/games/just-one/just-one.game';
 
 export interface HintJudgmentResult {
   playerId: string;
@@ -18,7 +18,6 @@ export interface AnswerJudgment {
 
 export interface IHintJudgeService {
   generateTopic(): Promise<string>;
-  validateHintFormat(hint: string): Promise<HintFormatValidation>;
   validateHintAgainstTopic(topic: string, hint: string): Promise<HintFormatValidation>;
   judgeHints(topic: string, hints: Hint[]): Promise<HintJudgmentResult[]>;
   judgeAnswer(topic: string, answer: string): Promise<AnswerJudgment>;

@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { Player, Hint } from '@/types/game';
 import { PlayerList } from '../common/PlayerList';
+import { Spinner } from '../common/Spinner';
 
 interface HintingPhaseProps {
   players: Player[];
@@ -90,6 +91,25 @@ export function HintingPhase({
             </div>
           ) : (
             <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-5 space-y-4">
+              {/* ヒントのルール */}
+              <div className="text-xs space-y-2">
+                <p className="text-slate-600 text-center">お題を連想させる<span className="font-medium">1単語</span>を出そう</p>
+                <div className="bg-slate-50 rounded-lg p-3 space-y-2">
+                  <p className="text-slate-500 text-center">例）お題「りんご」</p>
+                  <div className="flex gap-3">
+                    <div className="flex-1 bg-green-50 rounded p-2">
+                      <p className="text-green-700 font-medium mb-1">◯ OK</p>
+                      <p className="text-green-600">果物、赤い</p>
+                      <p className="text-slate-400 mt-1">→ 連想できる</p>
+                    </div>
+                    <div className="flex-1 bg-red-50 rounded p-2">
+                      <p className="text-red-600 font-medium mb-1">✗ NG</p>
+                      <p className="text-red-500">リンゴ、ご、apple</p>
+                      <p className="text-slate-400 mt-1">→ 言い換え・一部・翻訳</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <input
                 type="text"
                 value={hintInput}
@@ -105,9 +125,9 @@ export function HintingPhase({
               <button
                 onClick={handleSubmit}
                 disabled={!hintInput.trim() || isSubmitting}
-                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-semibold transition-colors"
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
               >
-                {isSubmitting ? '送信中...' : 'ヒントを送信'}
+                {isSubmitting ? <><Spinner size="sm" /> 送信中...</> : 'ヒントを送信'}
               </button>
             </div>
           )}

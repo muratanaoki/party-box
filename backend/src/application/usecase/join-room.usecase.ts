@@ -1,25 +1,22 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from "@nestjs/common";
 import {
   IGameRepository,
   GAME_REPOSITORY,
-} from '../../domain/repository/i-game.repository';
-import { createPlayer } from '../../domain/model/player';
-import { addPlayerToRoom, updatePlayerConnection } from '../../domain/model/room';
-import { JoinRoomDto } from '../dto/game-action.dto';
-import { Room } from '../../domain/model/room';
-
-export class RoomNotFoundError extends Error {
-  constructor(roomId: string) {
-    super(`Room ${roomId} not found`);
-    this.name = 'RoomNotFoundError';
-  }
-}
+} from "../../domain/repository/i-game.repository";
+import { createPlayer } from "../../domain/model/player";
+import {
+  addPlayerToRoom,
+  updatePlayerConnection,
+} from "../../domain/model/room";
+import { JoinRoomDto } from "../dto/game-action.dto";
+import { Room } from "../../domain/model/room";
+import { RoomNotFoundError } from "../error/game.errors";
 
 @Injectable()
 export class JoinRoomUseCase {
   constructor(
     @Inject(GAME_REPOSITORY)
-    private readonly gameRepository: IGameRepository,
+    private readonly gameRepository: IGameRepository
   ) {}
 
   async execute(dto: JoinRoomDto): Promise<Room> {

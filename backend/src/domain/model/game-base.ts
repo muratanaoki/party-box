@@ -1,4 +1,4 @@
-export type GameType = 'one-hint';
+export type GameType = 'just-one';
 
 export interface GameBase {
   type: GameType;
@@ -14,10 +14,10 @@ export interface GameConfig {
 }
 
 export const GAME_CONFIGS: Record<GameType, GameConfig> = {
-  'one-hint': {
+  'just-one': {
     minPlayers: 3,
     maxPlayers: 10,
-    name: 'One Hint',
+    name: 'Just One',
     description: 'AIが審判のワード推測ゲーム',
   },
 };

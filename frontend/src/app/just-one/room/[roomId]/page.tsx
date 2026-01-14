@@ -8,17 +8,11 @@ import { LobbyView } from '@/components/lobby/LobbyView';
 import { HintingPhase } from '@/components/game/HintingPhase';
 import { GuessingPhase } from '@/components/game/GuessingPhase';
 import { ResultPhase } from '@/components/game/ResultPhase';
-import { OneHintGame } from '@/types/game';
+import { FinishedPhase } from '@/components/game/FinishedPhase';
+import { JustOneGame } from '@/types/game';
+import { getStorageKeys } from '@/lib/storage';
 
-const getStorageKeys = (devId: string | null) => {
-  const suffix = devId ? `_dev${devId}` : '';
-  return {
-    PLAYER_ID_KEY: `partybox_player_id${suffix}`,
-    PLAYER_NAME_KEY: `partybox_player_name${suffix}`,
-  };
-};
-
-export default function OneHintRoomPage() {
+export default function JustOneRoomPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -49,7 +43,7 @@ export default function OneHintRoomPage() {
 
     if (!id || !name) {
       const devParam = devId ? `&dev=${devId}` : '';
-      router.push(`/one-hint?room=${roomId}${devParam}`);
+      router.push(`/just-one?room=${roomId}${devParam}`);
       return;
     }
 
@@ -85,7 +79,7 @@ export default function OneHintRoomPage() {
             </div>
             <p className="text-red-600 mb-4">{error}</p>
             <button
-              onClick={() => router.push('/one-hint')}
+              onClick={() => router.push('/just-one')}
               className="text-indigo-600 hover:text-indigo-700 font-medium"
             >
               ← ロビーに戻る
@@ -105,7 +99,7 @@ export default function OneHintRoomPage() {
   const isHost = currentPlayer?.isHost ?? false;
   const game = roomState.game;
 
-  const handleStartGame = () => startGame(roomId, playerId);
+  const handleStartGame = (totalRounds: number) => startGame(roomId, playerId, totalRounds);
   const handleSubmitHint = (hint: string) => submitHint(roomId, playerId, hint);
   const handleSubmitAnswer = (answer: string) => submitAnswer(roomId, playerId, answer);
   const handleNextRound = () => nextRound(roomId, playerId);
@@ -124,14 +118,14 @@ export default function OneHintRoomPage() {
       );
     }
 
-    if (game.type !== 'one-hint') {
+    if (game.type !== 'just-one') {
       return <p className="text-red-600">不正なゲームタイプ</p>;
     }
 
-    return renderOneHintGame(game);
+    return renderJustOneGame(game);
   };
 
-  const renderOneHintGame = (game: OneHintGame) => {
+  const renderJustOneGame = (game: JustOneGame) => {
     switch (game.phase) {
       case 'HINTING':
         return (
@@ -167,8 +161,18 @@ export default function OneHintRoomPage() {
             answer={game.answer}
             isCorrect={game.isCorrect}
             round={game.round}
+            totalRounds={game.totalRounds}
             isHost={isHost}
             onNextRound={handleNextRound}
+          />
+        );
+      case 'FINISHED':
+        return (
+          <FinishedPhase
+            players={roomState.players}
+            totalRounds={game.totalRounds}
+            isHost={isHost}
+            onBackToLobby={() => router.push('/just-one')}
           />
         );
     }
@@ -180,7 +184,7 @@ export default function OneHintRoomPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           {!devId && (
-            <Link href="/one-hint" className="text-slate-500 hover:text-slate-700 text-sm">
+            <Link href="/just-one" className="text-slate-500 hover:text-slate-700 text-sm">
               ← 退出
             </Link>
           )}

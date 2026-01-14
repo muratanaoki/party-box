@@ -6,16 +6,9 @@ import { v4 as uuidv4 } from 'uuid';
 import Link from 'next/link';
 import { useSocket } from '@/hooks/useSocket';
 import { getSocket } from '@/lib/socket';
+import { getStorageKeys } from '@/lib/storage';
 
-const getStorageKeys = (devId: string | null) => {
-  const suffix = devId ? `_dev${devId}` : '';
-  return {
-    PLAYER_ID_KEY: `partybox_player_id${suffix}`,
-    PLAYER_NAME_KEY: `partybox_player_name${suffix}`,
-  };
-};
-
-export default function OneHintLobby() {
+export default function JustOneLobby() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isConnected, createRoom, joinRoom, error, clearError } = useSocket();
@@ -74,12 +67,12 @@ export default function OneHintLobby() {
       if (devId && window.parent !== window) {
         window.parent.postMessage({ type: 'ROOM_CREATED', roomId: data.roomId }, '*');
       }
-      router.push(`/one-hint/room/${data.roomId}${devParam}`);
+      router.push(`/just-one/room/${data.roomId}${devParam}`);
     }
 
     function onRoomJoined(data: { roomId: string }) {
       setIsLoading(false);
-      router.push(`/one-hint/room/${data.roomId}${devParam}`);
+      router.push(`/just-one/room/${data.roomId}${devParam}`);
     }
 
     function onError() {
@@ -101,7 +94,7 @@ export default function OneHintLobby() {
     if (!playerName.trim() || isLoading) return;
     localStorage.setItem(PLAYER_NAME_KEY, playerName.trim());
     setIsLoading(true);
-    createRoom(playerId, playerName.trim(), 'one-hint');
+    createRoom(playerId, playerName.trim(), 'just-one');
   };
 
   const handleJoinRoom = () => {
@@ -142,7 +135,7 @@ export default function OneHintLobby() {
 
         {/* Title */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-slate-900">One Hint</h1>
+          <h1 className="text-3xl font-bold text-slate-900">Just One</h1>
           <p className="text-slate-500 mt-2">AIが審判の協力型ワードゲーム</p>
           <div className="mt-3">
             {isConnected ? (

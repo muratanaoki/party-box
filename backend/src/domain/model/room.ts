@@ -10,7 +10,7 @@ export interface Room {
   createdAt: Date;
 }
 
-export function createRoom(id: string, host: Player, gameType: GameType = 'one-hint'): Room {
+export function createRoom(id: string, host: Player, gameType: GameType = 'just-one'): Room {
   return {
     id,
     players: [host],
@@ -27,13 +27,6 @@ export function addPlayerToRoom(room: Room, player: Player): Room {
   return {
     ...room,
     players: [...room.players, player],
-  };
-}
-
-export function removePlayerFromRoom(room: Room, playerId: string): Room {
-  return {
-    ...room,
-    players: room.players.filter((p) => p.id !== playerId),
   };
 }
 

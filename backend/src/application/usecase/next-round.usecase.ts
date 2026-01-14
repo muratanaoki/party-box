@@ -1,53 +1,27 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from "@nestjs/common";
 import {
   IGameRepository,
   GAME_REPOSITORY,
-} from '../../domain/repository/i-game.repository';
+} from "../../domain/repository/i-game.repository";
 import {
   IHintJudgeService,
   HINT_JUDGE_SERVICE,
-} from '../../domain/service/i-hint-judge.service';
+} from "../../domain/service/i-hint-judge.service";
 import {
-  OneHintGame,
+  JustOneGame,
   resetGameForNextRound,
-} from '../../domain/model/games/one-hint/one-hint.game';
-import { getHost, Room } from '../../domain/model/room';
-import { NextRoundDto } from '../dto/game-action.dto';
-
-export class RoomNotFoundError extends Error {
-  constructor(roomId: string) {
-    super(`Room ${roomId} not found`);
-    this.name = 'RoomNotFoundError';
-  }
-}
-
-export class GameNotStartedError extends Error {
-  constructor() {
-    super('Game has not started');
-    this.name = 'GameNotStartedError';
-  }
-}
-
-export class NotHostError extends Error {
-  constructor() {
-    super('Only the host can start next round');
-    this.name = 'NotHostError';
-  }
-}
-
-export class InvalidPhaseError extends Error {
-  constructor() {
-    super('Can only start next round from result phase');
-    this.name = 'InvalidPhaseError';
-  }
-}
-
-export class InvalidGameTypeError extends Error {
-  constructor(gameType: string) {
-    super(`This action is not supported for game type: ${gameType}`);
-    this.name = 'InvalidGameTypeError';
-  }
-}
+  finishGame,
+  isLastRound,
+} from "../../domain/model/games/just-one/just-one.game";
+import { getHost, Room } from "../../domain/model/room";
+import { NextRoundDto } from "../dto/game-action.dto";
+import {
+  RoomNotFoundError,
+  GameNotStartedError,
+  NotHostError,
+  InvalidPhaseError,
+  InvalidGameTypeError,
+} from "../error/game.errors";
 
 @Injectable()
 export class NextRoundUseCase {
@@ -55,7 +29,7 @@ export class NextRoundUseCase {
     @Inject(GAME_REPOSITORY)
     private readonly gameRepository: IGameRepository,
     @Inject(HINT_JUDGE_SERVICE)
-    private readonly hintJudgeService: IHintJudgeService,
+    private readonly hintJudgeService: IHintJudgeService
   ) {}
 
   async execute(dto: NextRoundDto): Promise<Room> {
@@ -74,19 +48,30 @@ export class NextRoundUseCase {
       throw new NotHostError();
     }
 
-    if (room.game.type !== 'one-hint') {
+    if (room.game.type !== "just-one") {
       throw new InvalidGameTypeError(room.game.type);
     }
 
-    const game = room.game as OneHintGame;
+    const game = room.game as JustOneGame;
 
-    if (game.phase !== 'RESULT') {
+    if (game.phase !== "RESULT") {
       throw new InvalidPhaseError();
+    }
+
+    // 最終ラウンドならゲーム終了
+    if (isLastRound(game)) {
+      const finishedGame = finishGame(game);
+      const updatedRoom: Room = {
+        ...room,
+        game: finishedGame,
+      };
+      await this.gameRepository.saveRoom(updatedRoom);
+      return updatedRoom;
     }
 
     const connectedPlayers = room.players.filter((p) => p.isConnected);
     const currentAnswererIndex = connectedPlayers.findIndex(
-      (p) => p.id === game.answererId,
+      (p) => p.id === game.answererId
     );
     const nextAnswererIndex =
       (currentAnswererIndex + 1) % connectedPlayers.length;

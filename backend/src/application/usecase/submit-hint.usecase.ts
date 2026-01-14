@@ -1,56 +1,28 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from "@nestjs/common";
 import {
   IGameRepository,
   GAME_REPOSITORY,
-} from '../../domain/repository/i-game.repository';
+} from "../../domain/repository/i-game.repository";
 import {
   IHintJudgeService,
   HINT_JUDGE_SERVICE,
-} from '../../domain/service/i-hint-judge.service';
+} from "../../domain/service/i-hint-judge.service";
 import {
-  OneHintGame,
+  JustOneGame,
   submitHint,
   allHintsSubmitted,
   setHintValidity,
   transitionToGuessing,
-} from '../../domain/model/games/one-hint/one-hint.game';
-import { Room } from '../../domain/model/room';
-import { SubmitHintDto } from '../dto/game-action.dto';
-
-export class RoomNotFoundError extends Error {
-  constructor(roomId: string) {
-    super(`Room ${roomId} not found`);
-    this.name = 'RoomNotFoundError';
-  }
-}
-
-export class GameNotStartedError extends Error {
-  constructor() {
-    super('Game has not started');
-    this.name = 'GameNotStartedError';
-  }
-}
-
-export class InvalidPhaseError extends Error {
-  constructor() {
-    super('Cannot submit hint in current phase');
-    this.name = 'InvalidPhaseError';
-  }
-}
-
-export class InvalidGameTypeError extends Error {
-  constructor(gameType: string) {
-    super(`This action is not supported for game type: ${gameType}`);
-    this.name = 'InvalidGameTypeError';
-  }
-}
-
-export class InvalidHintFormatError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'InvalidHintFormatError';
-  }
-}
+} from "../../domain/model/games/just-one/just-one.game";
+import { Room } from "../../domain/model/room";
+import { SubmitHintDto } from "../dto/game-action.dto";
+import {
+  RoomNotFoundError,
+  GameNotStartedError,
+  InvalidPhaseError,
+  InvalidGameTypeError,
+  HintContainsTopicError,
+} from "../error/game.errors";
 
 @Injectable()
 export class SubmitHintUseCase {
@@ -58,7 +30,7 @@ export class SubmitHintUseCase {
     @Inject(GAME_REPOSITORY)
     private readonly gameRepository: IGameRepository,
     @Inject(HINT_JUDGE_SERVICE)
-    private readonly hintJudgeService: IHintJudgeService,
+    private readonly hintJudgeService: IHintJudgeService
   ) {}
 
   async execute(dto: SubmitHintDto): Promise<Room> {
@@ -72,43 +44,41 @@ export class SubmitHintUseCase {
       throw new GameNotStartedError();
     }
 
-    if (room.game.type !== 'one-hint') {
+    if (room.game.type !== "just-one") {
       throw new InvalidGameTypeError(room.game.type);
     }
 
-    const game = room.game as OneHintGame;
+    const game = room.game as JustOneGame;
 
-    if (game.phase !== 'HINTING') {
+    if (game.phase !== "HINTING") {
       throw new InvalidPhaseError();
     }
 
     const player = room.players.find((p) => p.id === dto.playerId);
     if (!player) {
-      throw new Error('Player not found in room');
+      throw new Error("Player not found in room");
     }
 
-    // ヒント形式をAIでバリデーション（1単語チェック）
-    const formatValidation = await this.hintJudgeService.validateHintFormat(dto.hint);
-    if (!formatValidation.isValid) {
-      throw new InvalidHintFormatError(formatValidation.error || 'ヒントは1単語で入力してください');
-    }
-
-    // お題に対するヒントの有効性チェック（お題を含むヒントなど）
-    const topicValidation = await this.hintJudgeService.validateHintAgainstTopic(game.topic, dto.hint);
+    // お題そのものを含むヒントはNG（AIでチェック）
+    const topicValidation =
+      await this.hintJudgeService.validateHintAgainstTopic(
+        game.topic,
+        dto.hint
+      );
     if (!topicValidation.isValid) {
-      throw new InvalidHintFormatError(topicValidation.error || 'このヒントは使用できません。別のヒントを入力してください');
+      throw new HintContainsTopicError(topicValidation.error);
     }
 
     let updatedGame = submitHint(game, dto.playerId, player.name, dto.hint);
 
     const connectedNonAnswerers = room.players.filter(
-      (p) => p.isConnected && p.id !== updatedGame.answererId,
+      (p) => p.isConnected && p.id !== updatedGame.answererId
     );
 
     if (allHintsSubmitted(updatedGame, connectedNonAnswerers.length + 1)) {
       const judgments = await this.hintJudgeService.judgeHints(
         updatedGame.topic,
-        updatedGame.hints,
+        updatedGame.hints
       );
 
       const validityMap = new Map<string, boolean>();

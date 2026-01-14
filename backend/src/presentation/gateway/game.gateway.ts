@@ -21,7 +21,7 @@ import {
 } from '../../domain/repository/i-game.repository';
 import { updatePlayerConnection, Room } from '../../domain/model/room';
 import { GameType } from '../../domain/model/game-base';
-import { OneHintGame } from '../../domain/model/games/one-hint/one-hint.game';
+import { JustOneGame } from '../../domain/model/games/just-one/just-one.game';
 
 interface ClientData {
   playerId: string;
@@ -140,12 +140,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('start-game')
   async handleStartGame(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { roomId: string; playerId: string },
+    @MessageBody() payload: { roomId: string; playerId: string; totalRounds?: number },
   ): Promise<void> {
     try {
       const room = await this.startGameUseCase.execute({
         roomId: payload.roomId,
         playerId: payload.playerId,
+        totalRounds: payload.totalRounds,
       });
 
       this.broadcastRoomState(room);
@@ -241,18 +242,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     switch (room.game.type) {
-      case 'one-hint':
+      case 'just-one':
         return {
           ...baseState,
-          game: this.transformOneHintGameForPlayer(room.game, playerId),
+          game: this.transformJustOneGameForPlayer(room.game, playerId),
         };
       default:
         return baseState;
     }
   }
 
-  private transformOneHintGameForPlayer(
-    game: OneHintGame,
+  private transformJustOneGameForPlayer(
+    game: JustOneGame,
     playerId: string,
   ): Record<string, unknown> {
     const isAnswerer = game.answererId === playerId;
@@ -293,6 +294,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       type: game.type,
       phase: game.phase,
       round: game.round,
+      totalRounds: game.totalRounds,
       answererId: game.answererId,
       topic,
       hints,

@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { Player, Hint } from '@/types/game';
 import { PlayerList } from '../common/PlayerList';
+import { Spinner } from '../common/Spinner';
 
 interface GuessingPhaseProps {
   players: Player[];
@@ -109,9 +110,9 @@ export function GuessingPhase({
           <button
             onClick={handleSubmit}
             disabled={!answerInput.trim() || isSubmitting}
-            className="w-full py-4 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-lg transition-colors"
+            className="w-full py-4 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2"
           >
-            {isSubmitting ? '送信中...' : '回答する'}
+            {isSubmitting ? <><Spinner size="sm" /> 送信中...</> : '回答する'}
           </button>
         </div>
       )}

@@ -1,6 +1,6 @@
 # Backend (NestJS)
 
-Party Box のバックエンド。WebSocket でリアルタイム通信し、ゲームロジックとAI判定を担当。
+Party Box のバックエンド。WebSocket でリアルタイム通信し、ゲームロジックと AI 判定を担当。
 
 ## 技術
 
@@ -96,11 +96,11 @@ export function createNewGame(...): NewGame { ... }
 ### 3. games/index.ts を更新
 
 ```typescript
-export * from './one-hint/one-hint.game';
-export * from './new-game/new-game.game';
+export * from "./one-hint/one-hint.game";
+export * from "./new-game/new-game.game";
 
-import { OneHintGame } from './one-hint/one-hint.game';
-import { NewGame } from './new-game/new-game.game';
+import { OneHintGame } from "./one-hint/one-hint.game";
+import { NewGame } from "./new-game/new-game.game";
 
 export type Game = OneHintGame | NewGame;
 ```
@@ -122,9 +122,9 @@ private createGameByType(gameType: GameType, ...) {
 
 ```typescript
 switch (room.game.type) {
-  case 'one-hint':
+  case "one-hint":
     return this.transformOneHintGameForPlayer(room.game, playerId);
-  case 'new-game':
+  case "new-game":
     return this.transformNewGameForPlayer(room.game, playerId);
 }
 ```
@@ -135,18 +135,18 @@ switch (room.game.type) {
 
 ## Socket.io イベント
 
-| イベント名 | 方向 | 説明 |
-|-----------|------|------|
-| `create-room` | Client → Server | 部屋作成（gameType指定可能） |
-| `join-room` | Client → Server | 部屋参加 |
-| `start-game` | Client → Server | ゲーム開始（ホストのみ） |
-| `submit-hint` | Client → Server | ヒント提出（One Hint用） |
-| `submit-answer` | Client → Server | 回答提出（One Hint用） |
-| `next-round` | Client → Server | 次ラウンド（ホストのみ） |
-| `room-updated` | Server → Client | 部屋状態のブロードキャスト |
-| `error` | Server → Client | エラー通知 |
+| イベント名      | 方向            | 説明                          |
+| --------------- | --------------- | ----------------------------- |
+| `create-room`   | Client → Server | 部屋作成（gameType 指定可能） |
+| `join-room`     | Client → Server | 部屋参加                      |
+| `start-game`    | Client → Server | ゲーム開始（ホストのみ）      |
+| `submit-hint`   | Client → Server | ヒント提出（One Hint 用）     |
+| `submit-answer` | Client → Server | 回答提出（One Hint 用）       |
+| `next-round`    | Client → Server | 次ラウンド（ホストのみ）      |
+| `room-updated`  | Server → Client | 部屋状態のブロードキャスト    |
+| `error`         | Server → Client | エラー通知                    |
 
-## ローカル実行（Docker外）
+## ローカル実行（Docker 外）
 
 ```bash
 npm install

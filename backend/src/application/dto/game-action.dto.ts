@@ -15,6 +15,7 @@ export interface JoinRoomDto {
 export interface StartGameDto {
   roomId: string;
   playerId: string;
+  totalRounds?: number;
 }
 
 export interface SubmitHintDto {
@@ -27,11 +28,6 @@ export interface SubmitAnswerDto {
   roomId: string;
   playerId: string;
   answer: string;
-}
-
-export interface ReconnectDto {
-  roomId: string;
-  playerId: string;
 }
 
 export interface NextRoundDto {

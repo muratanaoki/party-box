@@ -1,50 +1,26 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from "@nestjs/common";
 import {
   IGameRepository,
   GAME_REPOSITORY,
-} from '../../domain/repository/i-game.repository';
+} from "../../domain/repository/i-game.repository";
 import {
   IHintJudgeService,
   HINT_JUDGE_SERVICE,
-} from '../../domain/service/i-hint-judge.service';
+} from "../../domain/service/i-hint-judge.service";
+import { JustOneGame } from "../../domain/model/games/just-one/just-one.game";
+import { Room } from "../../domain/model/room";
+import { SubmitAnswerDto } from "../dto/game-action.dto";
 import {
-  OneHintGame,
-} from '../../domain/model/games/one-hint/one-hint.game';
-import { Room } from '../../domain/model/room';
-import { SubmitAnswerDto } from '../dto/game-action.dto';
-
-export class RoomNotFoundError extends Error {
-  constructor(roomId: string) {
-    super(`Room ${roomId} not found`);
-    this.name = 'RoomNotFoundError';
-  }
-}
-
-export class GameNotStartedError extends Error {
-  constructor() {
-    super('Game has not started');
-    this.name = 'GameNotStartedError';
-  }
-}
+  RoomNotFoundError,
+  GameNotStartedError,
+  InvalidPhaseError,
+  InvalidGameTypeError,
+} from "../error/game.errors";
 
 export class NotAnswererError extends Error {
   constructor() {
-    super('Only the answerer can submit an answer');
-    this.name = 'NotAnswererError';
-  }
-}
-
-export class InvalidPhaseError extends Error {
-  constructor() {
-    super('Cannot submit answer in current phase');
-    this.name = 'InvalidPhaseError';
-  }
-}
-
-export class InvalidGameTypeError extends Error {
-  constructor(gameType: string) {
-    super(`This action is not supported for game type: ${gameType}`);
-    this.name = 'InvalidGameTypeError';
+    super("Only the answerer can submit an answer");
+    this.name = "NotAnswererError";
   }
 }
 
@@ -54,7 +30,7 @@ export class SubmitAnswerUseCase {
     @Inject(GAME_REPOSITORY)
     private readonly gameRepository: IGameRepository,
     @Inject(HINT_JUDGE_SERVICE)
-    private readonly hintJudgeService: IHintJudgeService,
+    private readonly hintJudgeService: IHintJudgeService
   ) {}
 
   async execute(dto: SubmitAnswerDto): Promise<Room> {
@@ -68,13 +44,13 @@ export class SubmitAnswerUseCase {
       throw new GameNotStartedError();
     }
 
-    if (room.game.type !== 'one-hint') {
+    if (room.game.type !== "just-one") {
       throw new InvalidGameTypeError(room.game.type);
     }
 
-    const game = room.game as OneHintGame;
+    const game = room.game as JustOneGame;
 
-    if (game.phase !== 'GUESSING') {
+    if (game.phase !== "GUESSING") {
       throw new InvalidPhaseError();
     }
 
@@ -83,11 +59,14 @@ export class SubmitAnswerUseCase {
     }
 
     // AIで回答を判定（漢字/ひらがな/カタカナの表記ゆれを考慮）
-    const judgment = await this.hintJudgeService.judgeAnswer(game.topic, dto.answer);
+    const judgment = await this.hintJudgeService.judgeAnswer(
+      game.topic,
+      dto.answer
+    );
 
-    const updatedGame: OneHintGame = {
+    const updatedGame: JustOneGame = {
       ...game,
-      phase: 'RESULT',
+      phase: "RESULT",
       answer: dto.answer,
       isCorrect: judgment.isCorrect,
     };

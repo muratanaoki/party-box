@@ -1,5 +1,5 @@
-export * from './one-hint/one-hint.game';
+export * from './just-one/just-one.game';
 
-import { OneHintGame } from './one-hint/one-hint.game';
+import { JustOneGame } from './just-one/just-one.game';
 
-export type Game = OneHintGame;
+export type Game = JustOneGame;

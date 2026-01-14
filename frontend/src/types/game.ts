@@ -1,4 +1,9 @@
-export type GameType = 'one-hint';
+export type GameType = 'just-one';
+
+// ゲーム設定（バックエンドと同期）
+export const GAME_CONFIGS: Record<GameType, { minPlayers: number }> = {
+  'just-one': { minPlayers: 3 },
+};
 
 export interface Player {
   id: string;
@@ -20,17 +25,18 @@ export interface Hint {
   isValid: boolean;
 }
 
-export interface OneHintGame extends GameBase {
-  type: 'one-hint';
-  phase: 'HINTING' | 'GUESSING' | 'RESULT';
+export interface JustOneGame extends GameBase {
+  type: 'just-one';
+  phase: 'HINTING' | 'GUESSING' | 'RESULT' | 'FINISHED';
   topic: string | null;
   answererId: string;
   hints: Hint[];
   answer: string | null;
   isCorrect: boolean | null;
+  totalRounds: number;
 }
 
-export type Game = OneHintGame;
+export type Game = JustOneGame;
 
 export interface RoomState {
   id: string;

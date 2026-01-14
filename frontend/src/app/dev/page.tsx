@@ -72,13 +72,13 @@ export default function DevPage() {
     const devParam = `dev=${index + 1}`;
     if (index === 0) {
       // Player 1は常にロビーから開始（部屋作成）
-      return `/one-hint?${devParam}`;
+      return `/just-one?${devParam}`;
     } else if (sharedRoomId) {
       // 他プレイヤーはroomIdがあれば直接参加
-      return `/one-hint?room=${sharedRoomId}&${devParam}`;
+      return `/just-one?room=${sharedRoomId}&${devParam}`;
     } else {
       // roomIdがまだない場合はロビーで待機
-      return `/one-hint?${devParam}`;
+      return `/just-one?${devParam}`;
     }
   };
 
@@ -106,18 +106,13 @@ export default function DevPage() {
         </button>
       </div>
 
-      {/* Player Grid - 横並び */}
-      <div
-        className="flex-1 grid gap-2 p-2"
-        style={{
-          gridTemplateColumns: `repeat(${playerCount}, 1fr)`,
-          gridTemplateRows: '1fr',
-        }}
-      >
+      {/* Player Grid - 横並び、リサイズ可能 */}
+      <div className="flex-1 flex gap-2 p-2 overflow-x-auto">
         {Array.from({ length: playerCount }, (_, i) => (
           <div
             key={i === 0 ? 'player-1' : `${i}-${sharedRoomId || 'none'}`}
-            className="relative bg-slate-800 rounded-lg overflow-hidden flex flex-col"
+            className="relative bg-slate-800 rounded-lg overflow-hidden flex flex-col shrink-0 resize-x"
+            style={{ width: `${100 / playerCount}%`, minWidth: '280px', maxWidth: '600px' }}
           >
             {/* Player Label */}
             <div className={`px-3 py-1.5 text-sm font-medium ${
