@@ -5,7 +5,7 @@ import {
   HintJudgmentResult,
   HintFormatValidation,
 } from '../../domain/service/i-hint-judge.service';
-import { Hint } from '../../domain/model/games/one-hint/one-hint.game';
+import { Hint } from '../../domain/model/games/just-one/just-one.game';
 
 @Injectable()
 export class OpenAIHintJudgeService implements IHintJudgeService {
@@ -76,72 +76,22 @@ export class OpenAIHintJudgeService implements IHintJudgeService {
     return fallbackWords[Math.floor(Math.random() * fallbackWords.length)];
   }
 
-  async validateHintFormat(hint: string): Promise<HintFormatValidation> {
-    const prompt = `ジャストワン（Just One）のヒント形式をチェックしてください。
-
-ヒント: 「${hint}」
-
-## ルール
-- ヒントは「1単語」でなければならない
-- 助詞（は、が、を、に、で、と、の、へ、や、から、まで等）を含んではいけない
-- 文章や複数の単語の組み合わせは禁止
-- 数字やオノマトペ（擬音語・擬態語）は単語として有効
-
-## 有効な例
-- 「赤い」「果物」「丸い」「100」「ゴロゴロ」
-
-## 無効な例
-- 「赤いです」（助動詞付き）
-- 「果物の」（助詞付き）
-- 「とても甘い」（複数単語）
-- 「りんごは赤い」（文章）
-
-JSON形式で回答:
-{"valid": true/false, "error": "無効な場合の理由（日本語）"}`;
-
-    try {
-      const response = await this.openai.chat.completions.create({
-        model: this.model,
-        messages: [
-          { role: 'system', content: 'ヒント形式チェッカー。JSON形式で回答。' },
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0,
-        response_format: { type: 'json_object' },
-        max_tokens: 100,
-      });
-
-      const content = response.choices[0]?.message?.content;
-      if (!content) {
-        return { isValid: true };
-      }
-
-      const parsed = JSON.parse(content) as { valid: boolean; error?: string };
-      return {
-        isValid: parsed.valid,
-        error: parsed.error,
-      };
-    } catch (error) {
-      this.logger.error('Failed to validate hint format', error);
-      return { isValid: true };
-    }
-  }
-
   async validateHintAgainstTopic(topic: string, hint: string): Promise<HintFormatValidation> {
     const prompt = `ジャストワン（Just One）のヒントがお題に対して有効かチェックしてください。
 
 お題: 「${topic}」
 ヒント: 「${hint}」
 
-## 無効なヒント（出し直しが必要）
-以下の場合は無効:
-- お題の単語がヒントに含まれている（例: お題「山」→「富士山」は無効）
-- お題の読み方違い（例: お題「日本」→「にほん」「ニッポン」は無効）
-- お題の翻訳（例: お題「犬」→「dog」は無効）
-- お題の派生語・同じ語族（例: お題「王子」→「王女」は無効）
+## 無効なヒント（以下の3つのみ）
+1. お題と同じ（表記違い含む）: お題「猫」→「猫」「ねこ」「ネコ」「CAT」
+2. お題を含む: お題「山」→「富士山」「山登り」
+3. お題の翻訳: お題「犬」→「dog」
 
-## 有効なヒント
-- お題を連想させるが、お題自体を含まないヒント（例: お題「山」→「登山」は無効、「高い」は有効）
+## 必ず有効にするもの
+- 上記3つに該当しないものは全て有効
+- 意味不明でも有効
+- 関連性がなくても有効
+- どんな単語でも有効（上記3つ以外）
 
 JSON形式で回答:
 {"valid": true/false, "error": "無効な場合の理由（日本語）"}`;
@@ -188,16 +138,19 @@ JSON形式で回答:
 ${hintTexts}
 
 ## 重複の判定基準（該当するヒントは全て無効）
-以下の場合、重複しているヒントは全て無効にする:
+以下の場合のみ、重複しているヒントは全て無効にする:
 - 完全一致（大文字小文字・ひらがなカタカナ問わず）: 「猫」と「ねこ」と「ネコ」
-- 同じ語族・派生語: 「王子」と「王女」、「俳優」と「女優」、「走る」と「走り」
 - 同義語: 「車」と「自動車」、「医者」と「医師」
 - 翻訳: 「犬」と「dog」
 
+## 有効とするもの（重複ではない）
+- 派生語・語族: 「王子」と「王女」、「俳優」と「女優」は別の単語なのでOK
+- 関連語: 「暑い」と「夏」は両方有効
+- 似ているが違う単語: 重複ではない
+
 ## 注意
-- 関連語でも重複でなければ有効（例:「暑い」と「夏」は両方有効）
 - 2つ被れば2つとも無効、3つ被れば3つとも無効
-- 重複していないヒントは有効
+- 迷ったら有効にする（厳しくしすぎない）
 
 各ヒントについて、以下のJSON形式で回答してください:
 {

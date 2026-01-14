@@ -10,7 +10,7 @@ interface UseSocketReturn {
   error: string | null;
   createRoom: (playerId: string, playerName: string, gameType?: GameType) => void;
   joinRoom: (roomId: string, playerId: string, playerName: string) => void;
-  startGame: (roomId: string, playerId: string) => void;
+  startGame: (roomId: string, playerId: string, totalRounds?: number) => void;
   submitHint: (roomId: string, playerId: string, hint: string) => void;
   submitAnswer: (roomId: string, playerId: string, answer: string) => void;
   nextRound: (roomId: string, playerId: string) => void;
@@ -39,8 +39,6 @@ export function useSocket(): UseSocketReturn {
 
     function onError(data: { message: string }) {
       setError(data.message);
-      // 3秒後に自動でエラーを消す
-      setTimeout(() => setError(null), 3000);
     }
 
     socket.on('connect', onConnect);
@@ -75,13 +73,14 @@ export function useSocket(): UseSocketReturn {
     []
   );
 
-  const startGame = useCallback((roomId: string, playerId: string) => {
+  const startGame = useCallback((roomId: string, playerId: string, totalRounds?: number) => {
     const socket = getSocket();
-    socket.emit('start-game', { roomId, playerId });
+    socket.emit('start-game', { roomId, playerId, totalRounds });
   }, []);
 
   const submitHint = useCallback(
     (roomId: string, playerId: string, hint: string) => {
+      setError(null); // 送信時にエラーをクリア
       const socket = getSocket();
       socket.emit('submit-hint', { roomId, playerId, hint });
     },
