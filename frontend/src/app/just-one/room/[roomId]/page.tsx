@@ -52,6 +52,13 @@ export default function JustOneRoomPage() {
     setPlayerName(name);
   }, [roomId, router, PLAYER_ID_KEY, PLAYER_NAME_KEY, devId]);
 
+  // 接続が切れたらhasJoinedをリセット（再接続時に再参加するため）
+  useEffect(() => {
+    if (!isConnected) {
+      setHasJoined(false);
+    }
+  }, [isConnected]);
+
   useEffect(() => {
     if (isConnected && playerId && playerName && !hasJoined) {
       joinRoom(roomId, playerId, playerName);
@@ -210,7 +217,7 @@ export default function JustOneRoomPage() {
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 flex justify-between items-center">
             <span className="text-sm">{error}</span>
-            <button onClick={clearError} className="text-red-400 hover:text-red-600 text-lg leading-none">×</button>
+            <button onClick={clearError} className="text-red-400 hover:text-red-600 text-lg leading-none cursor-pointer">×</button>
           </div>
         )}
 

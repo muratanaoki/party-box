@@ -110,7 +110,7 @@ export function GuessingPhase({
           <button
             onClick={handleSubmit}
             disabled={!answerInput.trim() || isSubmitting}
-            className="w-full py-4 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2"
+            className="w-full py-4 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
           >
             {isSubmitting ? <><Spinner size="sm" /> 送信中...</> : '回答する'}
           </button>

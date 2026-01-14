@@ -104,7 +104,7 @@ export function ResultPhase({
         <button
           onClick={handleNextRound}
           disabled={isLoading}
-          className={`w-full py-4 text-white rounded-xl font-bold text-lg transition-colors shadow-sm flex items-center justify-center gap-2 ${
+          className={`w-full py-4 text-white rounded-xl font-bold text-lg transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed ${
             isLastRound
               ? 'bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300'
               : 'bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300'

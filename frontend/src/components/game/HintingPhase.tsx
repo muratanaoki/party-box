@@ -84,10 +84,10 @@ export function HintingPhase({
           <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 text-center shadow-lg">
             <p className="text-indigo-100 text-sm mb-1">お題</p>
             <p className="text-white text-3xl font-bold">{topic}</p>
-            {isHost && (
+            {isHost && hints.length === 0 && (
               <button
                 onClick={onRegenerateTopic}
-                className="mt-3 text-indigo-200 hover:text-white text-sm underline"
+                className="mt-3 text-indigo-200 hover:text-white text-sm underline cursor-pointer"
               >
                 お題を出し直す
               </button>
@@ -137,7 +137,7 @@ export function HintingPhase({
               <button
                 onClick={handleSubmit}
                 disabled={!hintInput.trim() || isSubmitting}
-                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
               >
                 {isSubmitting ? <><Spinner size="sm" /> 送信中...</> : 'ヒントを送信'}
               </button>

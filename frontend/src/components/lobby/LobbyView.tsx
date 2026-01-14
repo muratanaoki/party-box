@@ -39,7 +39,7 @@ export function LobbyView({
         <p className="text-2xl font-bold text-indigo-600 tracking-widest mb-2">{roomId}</p>
         <button
           onClick={handleCopyLink}
-          className="text-xs text-slate-500 hover:text-indigo-600 transition-colors"
+          className="text-xs text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer"
         >
           招待リンクをコピー
         </button>
@@ -65,14 +65,14 @@ export function LobbyView({
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setLoops(Math.max(1, loops - 1))}
-                  className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 font-bold transition-colors"
+                  className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 font-bold transition-colors cursor-pointer"
                 >
                   -
                 </button>
                 <span className="w-8 text-center text-lg font-bold text-indigo-600">{loops}</span>
                 <button
                   onClick={() => setLoops(loops + 1)}
-                  className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 font-bold transition-colors"
+                  className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 font-bold transition-colors cursor-pointer"
                 >
                   +
                 </button>
@@ -85,7 +85,7 @@ export function LobbyView({
           <button
             onClick={() => onStartGame(totalRounds)}
             disabled={!canStart}
-            className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-base transition-colors shadow-sm"
+            className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-base transition-colors shadow-sm cursor-pointer disabled:cursor-not-allowed"
           >
             ゲームを開始
           </button>

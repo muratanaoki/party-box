@@ -52,7 +52,7 @@ export function FinishedPhase({
       {isHost ? (
         <button
           onClick={onBackToLobby}
-          className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors"
+          className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors cursor-pointer"
         >
           ロビーに戻る
         </button>

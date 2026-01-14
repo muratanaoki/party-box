@@ -156,7 +156,7 @@ export default function JustOneLobby() {
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 flex justify-between items-center">
             <span className="text-sm">{error}</span>
-            <button onClick={clearError} className="text-red-400 hover:text-red-600 text-lg leading-none">×</button>
+            <button onClick={clearError} className="text-red-400 hover:text-red-600 text-lg leading-none cursor-pointer">×</button>
           </div>
         )}
 
@@ -180,7 +180,7 @@ export default function JustOneLobby() {
           <button
             onClick={handleCreateRoom}
             disabled={!playerName.trim() || !isConnected || isLoading}
-            className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-semibold transition-colors shadow-sm"
+            className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-semibold transition-colors shadow-sm cursor-pointer disabled:cursor-not-allowed"
           >
             {isLoading ? '作成中...' : '新しい部屋を作成'}
           </button>
@@ -214,7 +214,7 @@ export default function JustOneLobby() {
               <button
                 onClick={handleJoinRoom}
                 disabled={!playerName.trim() || !roomIdInput.trim() || !isConnected || isLoading}
-                className="shrink-0 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-semibold transition-colors"
+                className="shrink-0 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-semibold transition-colors cursor-pointer disabled:cursor-not-allowed"
               >
                 {isLoading ? '...' : '参加'}
               </button>
