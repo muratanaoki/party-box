@@ -41,3 +41,10 @@ export class HintContainsTopicError extends Error {
     this.name = "HintContainsTopicError";
   }
 }
+
+export class HintNotSingleWordError extends Error {
+  constructor() {
+    super("ヒントは1単語で入力してください");
+    this.name = "HintNotSingleWordError";
+  }
+}

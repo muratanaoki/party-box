@@ -22,6 +22,7 @@ import {
   InvalidPhaseError,
   InvalidGameTypeError,
   HintContainsTopicError,
+  HintNotSingleWordError,
 } from "../error/game.errors";
 
 @Injectable()
@@ -57,6 +58,12 @@ export class SubmitHintUseCase {
     const player = room.players.find((p) => p.id === dto.playerId);
     if (!player) {
       throw new Error("Player not found in room");
+    }
+
+    // 単語チェック（AIで判定）
+    const formatValidation = await this.hintJudgeService.validateHintFormat(dto.hint);
+    if (!formatValidation.isValid) {
+      throw new HintNotSingleWordError();
     }
 
     // お題そのものを含むヒントはNG（AIでチェック）

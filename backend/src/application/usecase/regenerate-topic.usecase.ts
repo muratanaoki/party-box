@@ -41,8 +41,9 @@ export class RegenerateTopicUseCase {
       throw new Error('Unsupported game type');
     }
 
-    const newTopic = await this.hintJudgeService.generateTopic();
-    const updatedGame = regenerateTopic(room.game as JustOneGame, newTopic);
+    const game = room.game as JustOneGame;
+    const newTopic = await this.hintJudgeService.generateTopic(game.usedTopics);
+    const updatedGame = regenerateTopic(game, newTopic);
 
     const updatedRoom: Room = {
       ...room,

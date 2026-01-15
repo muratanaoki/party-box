@@ -17,7 +17,8 @@ export interface AnswerJudgment {
 }
 
 export interface IHintJudgeService {
-  generateTopic(): Promise<string>;
+  generateTopic(excludeTopics?: string[]): Promise<string>;
+  validateHintFormat(hint: string): Promise<HintFormatValidation>;
   validateHintAgainstTopic(topic: string, hint: string): Promise<HintFormatValidation>;
   judgeHints(topic: string, hints: Hint[]): Promise<HintJudgmentResult[]>;
   judgeAnswer(topic: string, answer: string): Promise<AnswerJudgment>;

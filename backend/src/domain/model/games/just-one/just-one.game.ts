@@ -18,6 +18,7 @@ export interface JustOneGame extends GameBase {
   answer: string | null;
   isCorrect: boolean | null;
   totalRounds: number;
+  usedTopics: string[]; // 過去に出たお題
 }
 
 export function createJustOneGame(answererId: string, topic: string, totalRounds: number = 5): JustOneGame {
@@ -31,6 +32,7 @@ export function createJustOneGame(answererId: string, topic: string, totalRounds
     isCorrect: null,
     round: 1,
     totalRounds,
+    usedTopics: [topic],
   };
 }
 
@@ -118,6 +120,7 @@ export function resetGameForNextRound(
     isCorrect: null,
     round: game.round + 1,
     totalRounds: game.totalRounds,
+    usedTopics: [...game.usedTopics, newTopic],
   };
 }
 
@@ -136,6 +139,7 @@ export function regenerateTopic(game: JustOneGame, newTopic: string): JustOneGam
     ...game,
     topic: newTopic,
     hints: [], // ヒントもリセット
+    usedTopics: [...game.usedTopics, newTopic],
   };
 }
 

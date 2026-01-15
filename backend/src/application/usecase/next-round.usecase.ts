@@ -77,8 +77,8 @@ export class NextRoundUseCase {
       (currentAnswererIndex + 1) % connectedPlayers.length;
     const nextAnswerer = connectedPlayers[nextAnswererIndex];
 
-    // AIで新しいお題を生成
-    const newTopic = await this.hintJudgeService.generateTopic();
+    // AIで新しいお題を生成（過去のお題を除外）
+    const newTopic = await this.hintJudgeService.generateTopic(game.usedTopics);
     const updatedGame = resetGameForNextRound(game, nextAnswerer.id, newTopic);
 
     const updatedRoom: Room = {

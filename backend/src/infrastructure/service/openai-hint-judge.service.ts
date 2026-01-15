@@ -19,7 +19,7 @@ export class OpenAIHintJudgeService implements IHintJudgeService {
     });
   }
 
-  async generateTopic(): Promise<string> {
+  async generateTopic(excludeTopics: string[] = []): Promise<string> {
     // ランダムにカテゴリを選んでバリエーションを出す
     const categories = [
       '食べ物・料理',
@@ -34,8 +34,13 @@ export class OpenAIHintJudgeService implements IHintJudgeService {
       '季節・行事',
       '楽器・音楽',
       '服・ファッション',
+      '有名キャラクター',
     ];
     const category = categories[Math.floor(Math.random() * categories.length)];
+
+    const excludeNote = excludeTopics.length > 0
+      ? `\n\n絶対に使ってはいけない単語: ${excludeTopics.join('、')}`
+      : '';
 
     const prompt = `「${category}」に関するワードゲームのお題を1つ生成してください。
 
@@ -43,7 +48,7 @@ export class OpenAIHintJudgeService implements IHintJudgeService {
 - 日本語の単語1つ
 - 誰でも知っている言葉
 - 具体的な名詞
-- ブランド名・キャラクター名は禁止
+- 有名キャラクター（ドラえもん、ピカチュウ等）はOK${excludeNote}
 
 単語のみ出力:`;
 
@@ -59,23 +64,78 @@ export class OpenAIHintJudgeService implements IHintJudgeService {
       });
 
       const topic = response.choices[0]?.message?.content?.trim();
-      if (!topic) {
-        // フォールバック
-        return this.getFallbackTopic();
+      if (!topic || excludeTopics.includes(topic)) {
+        return this.getFallbackTopic(excludeTopics);
       }
       return topic;
     } catch (error) {
       this.logger.error('Failed to generate topic', error);
-      return this.getFallbackTopic();
+      return this.getFallbackTopic(excludeTopics);
     }
   }
 
-  private getFallbackTopic(): string {
+  async validateHintFormat(hint: string): Promise<HintFormatValidation> {
+    const prompt = `これは「1単語」ですか？
+
+入力: 「${hint}」
+
+## 1単語の条件
+- 名詞、形容詞、動詞などの単語1つ
+- 助詞（は、が、を、に、で、と、の、へ、や、から、まで等）を含まない
+- 助動詞（です、ます、だ等）を含まない
+- 複数の単語の組み合わせではない
+
+## OK例
+「赤い」「果物」「走る」「美しい」「ピカチュウ」
+
+## NG例
+「赤いです」→ 助動詞付き
+「果物の」→ 助詞付き
+「とても甘い」→ 複数単語
+「りんごは赤い」→ 文章
+
+JSON形式で回答:
+{"valid": true/false, "error": "NGの場合の理由（日本語10文字以内）"}`;
+
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: this.model,
+        messages: [
+          { role: 'system', content: '単語チェッカー。JSON形式で回答。' },
+          { role: 'user', content: prompt },
+        ],
+        temperature: 0,
+        response_format: { type: 'json_object' },
+        max_tokens: 50,
+      });
+
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        return { isValid: true };
+      }
+
+      const parsed = JSON.parse(content) as { valid: boolean; error?: string };
+      return {
+        isValid: parsed.valid,
+        error: parsed.error,
+      };
+    } catch (error) {
+      this.logger.error('Failed to validate hint format', error);
+      return { isValid: true };
+    }
+  }
+
+  private getFallbackTopic(excludeTopics: string[] = []): string {
     const fallbackWords = [
       'りんご', '電車', '猫', '太陽', '学校', '傘', 'カレー', '海',
       '時計', '本', '桜', '雨', '犬', '月', '山', 'パン',
+      'ドラえもん', 'ピカチュウ', 'アンパンマン', 'サンタクロース',
     ];
-    return fallbackWords[Math.floor(Math.random() * fallbackWords.length)];
+    const available = fallbackWords.filter(w => !excludeTopics.includes(w));
+    if (available.length === 0) {
+      return fallbackWords[Math.floor(Math.random() * fallbackWords.length)];
+    }
+    return available[Math.floor(Math.random() * available.length)];
   }
 
   async validateHintAgainstTopic(topic: string, hint: string): Promise<HintFormatValidation> {
