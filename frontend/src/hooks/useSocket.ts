@@ -10,7 +10,7 @@ interface UseSocketReturn {
   error: string | null;
   createRoom: (playerId: string, playerName: string, gameType?: GameType) => void;
   joinRoom: (roomId: string, playerId: string, playerName: string) => void;
-  startGame: (roomId: string, playerId: string, totalRounds?: number) => void;
+  startGame: (roomId: string, playerId: string, totalRounds?: number, excludeTopics?: string[]) => void;
   submitHint: (roomId: string, playerId: string, hint: string) => void;
   submitAnswer: (roomId: string, playerId: string, answer: string) => void;
   nextRound: (roomId: string, playerId: string) => void;
@@ -74,9 +74,9 @@ export function useSocket(): UseSocketReturn {
     []
   );
 
-  const startGame = useCallback((roomId: string, playerId: string, totalRounds?: number) => {
+  const startGame = useCallback((roomId: string, playerId: string, totalRounds?: number, excludeTopics?: string[]) => {
     const socket = getSocket();
-    socket.emit('start-game', { roomId, playerId, totalRounds });
+    socket.emit('start-game', { roomId, playerId, totalRounds, excludeTopics });
   }, []);
 
   const submitHint = useCallback(

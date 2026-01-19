@@ -1,10 +1,11 @@
 'use client';
 
-import { Player } from '@/types/game';
+import { Player, RoundResult } from '@/types/game';
 
 interface FinishedPhaseProps {
   players: Player[];
   totalRounds: number;
+  roundResults: RoundResult[];
   isHost: boolean;
   onBackToLobby: () => void;
 }
@@ -12,9 +13,12 @@ interface FinishedPhaseProps {
 export function FinishedPhase({
   players,
   totalRounds,
+  roundResults,
   isHost,
   onBackToLobby,
 }: FinishedPhaseProps) {
+  const correctCount = roundResults.filter((r) => r.isCorrect).length;
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -24,13 +28,41 @@ export function FinishedPhase({
         </span>
       </div>
 
-      {/* Summary Card */}
-      <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 text-center">
-        <p className="text-slate-600 mb-2">全 {totalRounds} ラウンド完了</p>
-        <p className="text-2xl font-bold text-indigo-600 mb-4">
-          お疲れさまでした!
+      {/* Score Card */}
+      <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 text-center shadow-lg">
+        <p className="text-indigo-100 text-sm mb-1">最終結果</p>
+        <p className="text-white text-5xl font-bold mb-2">
+          {correctCount} / {totalRounds}
         </p>
-        <div className="text-6xl mb-4">🎉</div>
+        <p className="text-indigo-100">正解</p>
+      </div>
+
+      {/* Round Results */}
+      <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-5">
+        <p className="text-slate-600 text-sm mb-3">ラウンド結果</p>
+        <div className="space-y-2">
+          {roundResults.map((result) => (
+            <div
+              key={result.round}
+              className={`flex items-center justify-between px-4 py-3 rounded-xl ${
+                result.isCorrect ? 'bg-green-50' : 'bg-red-50'
+              }`}
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-500 text-xs">R{result.round}</span>
+                  <span className="font-medium text-slate-800 truncate">{result.topic}</span>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {result.answererName}: {result.answer}
+                </p>
+              </div>
+              <span className={`text-lg ml-2 ${result.isCorrect ? '' : 'grayscale'}`}>
+                {result.isCorrect ? '⭕' : '❌'}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Players */}

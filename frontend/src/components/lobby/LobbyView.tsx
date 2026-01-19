@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Player, GameType, GAME_CONFIGS } from '@/types/game';
 import { PlayerList } from '../common/PlayerList';
+import { Spinner } from '../common/Spinner';
 
 interface LobbyViewProps {
   roomId: string;
@@ -22,9 +23,18 @@ export function LobbyView({
   onStartGame,
 }: LobbyViewProps) {
   const [loops, setLoops] = useState(1);
+  const [isStarting, setIsStarting] = useState(false);
   const minPlayers = GAME_CONFIGS[gameType].minPlayers;
-  const canStart = players.length >= minPlayers;
+  const canStart = players.length >= minPlayers && !isStarting;
   const totalRounds = loops * players.length;
+
+  // ゲーム開始ボタンは一度クリックされたらローディング状態のまま
+  // ゲーム開始後は別の画面に遷移するのでリセット不要
+  const handleStartGame = () => {
+    if (isStarting) return;
+    setIsStarting(true);
+    onStartGame(totalRounds);
+  };
 
   const handleCopyLink = async () => {
     const url = `${window.location.origin}/${gameType}/room/${roomId}`;
@@ -83,11 +93,11 @@ export function LobbyView({
         )}
         {isHost ? (
           <button
-            onClick={() => onStartGame(totalRounds)}
+            onClick={handleStartGame}
             disabled={!canStart}
-            className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-base transition-colors shadow-sm cursor-pointer disabled:cursor-not-allowed"
+            className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-base transition-colors shadow-sm cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            ゲームを開始
+            {isStarting ? <><Spinner size="sm" /> 開始中...</> : 'ゲームを開始'}
           </button>
         ) : (
           <div className="text-center py-2 text-slate-500 text-sm">

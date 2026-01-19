@@ -16,6 +16,7 @@ export interface StartGameDto {
   roomId: string;
   playerId: string;
   totalRounds?: number;
+  excludeTopics?: string[]; // 過去に出たお題（ローカルストレージから）
 }
 
 export interface SubmitHintDto {

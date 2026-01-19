@@ -25,6 +25,15 @@ export interface Hint {
   isValid: boolean;
 }
 
+export interface RoundResult {
+  round: number;
+  topic: string;
+  answererId: string;
+  answererName: string;
+  answer: string;
+  isCorrect: boolean;
+}
+
 export interface JustOneGame extends GameBase {
   type: 'just-one';
   phase: 'HINTING' | 'GUESSING' | 'RESULT' | 'FINISHED';
@@ -34,6 +43,7 @@ export interface JustOneGame extends GameBase {
   answer: string | null;
   isCorrect: boolean | null;
   totalRounds: number;
+  roundResults: RoundResult[];
 }
 
 export type Game = JustOneGame;

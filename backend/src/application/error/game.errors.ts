@@ -48,3 +48,10 @@ export class HintNotSingleWordError extends Error {
     this.name = "HintNotSingleWordError";
   }
 }
+
+export class NotAnswererError extends Error {
+  constructor() {
+    super("Only the answerer can submit an answer");
+    this.name = "NotAnswererError";
+  }
+}

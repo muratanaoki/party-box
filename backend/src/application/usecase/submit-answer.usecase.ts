@@ -7,7 +7,7 @@ import {
   IHintJudgeService,
   HINT_JUDGE_SERVICE,
 } from "../../domain/service/i-hint-judge.service";
-import { JustOneGame } from "../../domain/model/games/just-one/just-one.game";
+import { JustOneGame, RoundResult } from "../../domain/model/games/just-one/just-one.game";
 import { Room } from "../../domain/model/room";
 import { SubmitAnswerDto } from "../dto/game-action.dto";
 import {
@@ -15,14 +15,8 @@ import {
   GameNotStartedError,
   InvalidPhaseError,
   InvalidGameTypeError,
+  NotAnswererError,
 } from "../error/game.errors";
-
-export class NotAnswererError extends Error {
-  constructor() {
-    super("Only the answerer can submit an answer");
-    this.name = "NotAnswererError";
-  }
-}
 
 @Injectable()
 export class SubmitAnswerUseCase {
@@ -64,11 +58,26 @@ export class SubmitAnswerUseCase {
       dto.answer
     );
 
+    // 回答者の名前を取得
+    const answerer = room.players.find((p) => p.id === game.answererId);
+    const answererName = answerer?.name ?? "???";
+
+    // ラウンド結果を保存
+    const roundResult: RoundResult = {
+      round: game.round,
+      topic: game.topic,
+      answererId: game.answererId,
+      answererName,
+      answer: dto.answer,
+      isCorrect: judgment.isCorrect,
+    };
+
     const updatedGame: JustOneGame = {
       ...game,
       phase: "RESULT",
       answer: dto.answer,
       isCorrect: judgment.isCorrect,
+      roundResults: [...(game.roundResults || []), roundResult],
     };
 
     const updatedRoom: Room = {

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { Player, Hint } from '@/types/game';
 import { PlayerList } from '../common/PlayerList';
 import { Spinner } from '../common/Spinner';
+import { getPlayerName, partitionHints } from '@/lib/game-helpers';
 
 interface GuessingPhaseProps {
   players: Player[];
@@ -11,6 +12,7 @@ interface GuessingPhaseProps {
   answererId: string;
   hints: Hint[];
   round: number;
+  totalRounds: number;
   onSubmitAnswer: (answer: string) => void;
 }
 
@@ -20,6 +22,7 @@ export function GuessingPhase({
   answererId,
   hints,
   round,
+  totalRounds,
   onSubmitAnswer,
 }: GuessingPhaseProps) {
   const [answerInput, setAnswerInput] = useState('');
@@ -27,9 +30,8 @@ export function GuessingPhase({
   const isComposingRef = useRef(false);
 
   const isAnswerer = currentPlayerId === answererId;
-  const answererName = players.find((p) => p.id === answererId)?.name ?? '???';
-  const validHints = hints.filter((h) => h.isValid);
-  const invalidHints = hints.filter((h) => !h.isValid);
+  const answererName = getPlayerName(players, answererId);
+  const { validHints, invalidHints } = useMemo(() => partitionHints(hints), [hints]);
 
   const handleSubmit = () => {
     const trimmed = answerInput.trim();
@@ -53,7 +55,7 @@ export function GuessingPhase({
       {/* Header */}
       <div className="text-center">
         <span className="inline-block bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-medium">
-          ラウンド {round}
+          ラウンド {round}/{totalRounds}
         </span>
         <p className="text-slate-800 font-bold text-lg mt-2">
           {isAnswerer ? '回答してください!' : `${answererName}が回答中...`}

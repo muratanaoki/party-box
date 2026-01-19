@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Player, Hint } from '@/types/game';
 import { PlayerList } from '../common/PlayerList';
 import { Spinner } from '../common/Spinner';
+import { getPlayerName } from '@/lib/game-helpers';
 
 interface ResultPhaseProps {
   players: Player[];
@@ -33,7 +34,7 @@ export function ResultPhase({
   onNextRound,
 }: ResultPhaseProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const answererName = players.find((p) => p.id === answererId)?.name ?? '???';
+  const answererName = getPlayerName(players, answererId);
   const isLastRound = round >= totalRounds;
 
   const handleNextRound = () => {

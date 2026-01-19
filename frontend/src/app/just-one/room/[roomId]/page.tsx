@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import { useSocket } from '@/hooks/useSocket';
-import { LobbyView } from '@/components/lobby/LobbyView';
-import { HintingPhase } from '@/components/game/HintingPhase';
-import { GuessingPhase } from '@/components/game/GuessingPhase';
-import { ResultPhase } from '@/components/game/ResultPhase';
-import { FinishedPhase } from '@/components/game/FinishedPhase';
-import { JustOneGame } from '@/types/game';
-import { getStorageKeys } from '@/lib/storage';
+import { useEffect, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { useSocket } from "@/hooks/useSocket";
+import { LobbyView } from "@/components/lobby/LobbyView";
+import { HintingPhase } from "@/components/game/HintingPhase";
+import { GuessingPhase } from "@/components/game/GuessingPhase";
+import { ResultPhase } from "@/components/game/ResultPhase";
+import { FinishedPhase } from "@/components/game/FinishedPhase";
+import { JustOneGame } from "@/types/game";
+import { getStorageKeys, getUsedTopics, addUsedTopics } from "@/lib/storage";
 
 export default function JustOneRoomPage() {
   const params = useParams();
@@ -18,7 +18,7 @@ export default function JustOneRoomPage() {
   const searchParams = useSearchParams();
   const roomId = (params.roomId as string).toUpperCase();
 
-  const devId = searchParams.get('dev');
+  const devId = searchParams.get("dev");
   const { PLAYER_ID_KEY, PLAYER_NAME_KEY } = getStorageKeys(devId);
 
   const {
@@ -43,7 +43,7 @@ export default function JustOneRoomPage() {
     const name = localStorage.getItem(PLAYER_NAME_KEY);
 
     if (!id || !name) {
-      const devParam = devId ? `&dev=${devId}` : '';
+      const devParam = devId ? `&dev=${devId}` : "";
       router.push(`/just-one?room=${roomId}${devParam}`);
       return;
     }
@@ -66,6 +66,14 @@ export default function JustOneRoomPage() {
     }
   }, [isConnected, playerId, playerName, roomId, joinRoom, hasJoined]);
 
+  // お題が出た瞬間にローカルストレージに保存（同じお題が出ないように）
+  useEffect(() => {
+    const game = roomState?.game;
+    if (game?.type === "just-one" && game.topic) {
+      addUsedTopics([game.topic]);
+    }
+  }, [roomState?.game?.topic]);
+
   if (!playerId || !playerName) {
     return (
       <main className="min-h-screen bg-gradient-to-b from-indigo-50 to-white flex items-center justify-center">
@@ -87,7 +95,7 @@ export default function JustOneRoomPage() {
             </div>
             <p className="text-red-600 mb-4">{error}</p>
             <button
-              onClick={() => router.push('/just-one')}
+              onClick={() => router.push("/just-one")}
               className="text-indigo-600 hover:text-indigo-700 font-medium"
             >
               ← ロビーに戻る
@@ -107,9 +115,13 @@ export default function JustOneRoomPage() {
   const isHost = currentPlayer?.isHost ?? false;
   const game = roomState.game;
 
-  const handleStartGame = (totalRounds: number) => startGame(roomId, playerId, totalRounds);
+  const handleStartGame = (totalRounds: number) => {
+    const excludeTopics = getUsedTopics();
+    startGame(roomId, playerId, totalRounds, excludeTopics);
+  };
   const handleSubmitHint = (hint: string) => submitHint(roomId, playerId, hint);
-  const handleSubmitAnswer = (answer: string) => submitAnswer(roomId, playerId, answer);
+  const handleSubmitAnswer = (answer: string) =>
+    submitAnswer(roomId, playerId, answer);
   const handleNextRound = () => nextRound(roomId, playerId);
   const handleRegenerateTopic = () => regenerateTopic(roomId, playerId);
 
@@ -127,7 +139,7 @@ export default function JustOneRoomPage() {
       );
     }
 
-    if (game.type !== 'just-one') {
+    if (game.type !== "just-one") {
       return <p className="text-red-600">不正なゲームタイプ</p>;
     }
 
@@ -136,7 +148,7 @@ export default function JustOneRoomPage() {
 
   const renderJustOneGame = (game: JustOneGame) => {
     switch (game.phase) {
-      case 'HINTING':
+      case "HINTING":
         return (
           <HintingPhase
             players={roomState.players}
@@ -145,12 +157,15 @@ export default function JustOneRoomPage() {
             topic={game.topic}
             hints={game.hints}
             round={game.round}
+            totalRounds={game.totalRounds}
             isHost={isHost}
+            error={error}
             onSubmitHint={handleSubmitHint}
             onRegenerateTopic={handleRegenerateTopic}
+            onClearError={clearError}
           />
         );
-      case 'GUESSING':
+      case "GUESSING":
         return (
           <GuessingPhase
             players={roomState.players}
@@ -158,10 +173,11 @@ export default function JustOneRoomPage() {
             answererId={game.answererId}
             hints={game.hints}
             round={game.round}
+            totalRounds={game.totalRounds}
             onSubmitAnswer={handleSubmitAnswer}
           />
         );
-      case 'RESULT':
+      case "RESULT":
         return (
           <ResultPhase
             players={roomState.players}
@@ -177,13 +193,14 @@ export default function JustOneRoomPage() {
             onNextRound={handleNextRound}
           />
         );
-      case 'FINISHED':
+      case "FINISHED":
         return (
           <FinishedPhase
             players={roomState.players}
             totalRounds={game.totalRounds}
+            roundResults={game.roundResults || []}
             isHost={isHost}
-            onBackToLobby={() => router.push('/just-one')}
+            onBackToLobby={() => router.push("/just-one")}
           />
         );
     }
@@ -195,7 +212,10 @@ export default function JustOneRoomPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           {!devId && (
-            <Link href="/just-one" className="text-slate-500 hover:text-slate-700 text-sm">
+            <Link
+              href="/just-one"
+              className="text-slate-500 hover:text-slate-700 text-sm"
+            >
               ← 退出
             </Link>
           )}
@@ -213,11 +233,16 @@ export default function JustOneRoomPage() {
           )}
         </div>
 
-        {/* Error */}
-        {error && (
+        {/* Error - HINTINGフェーズ以外で表示（HINTINGはコンポーネント内で表示） */}
+        {error && game?.phase !== "HINTING" && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 flex justify-between items-center">
             <span className="text-sm">{error}</span>
-            <button onClick={clearError} className="text-red-400 hover:text-red-600 text-lg leading-none cursor-pointer">×</button>
+            <button
+              onClick={clearError}
+              className="text-red-400 hover:text-red-600 text-lg leading-none cursor-pointer"
+            >
+              ×
+            </button>
           </div>
         )}
 

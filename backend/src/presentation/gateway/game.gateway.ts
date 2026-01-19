@@ -6,45 +6,76 @@ import {
   OnGatewayDisconnect,
   ConnectedSocket,
   MessageBody,
-} from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
-import { Logger, Inject } from '@nestjs/common';
-import { CreateRoomUseCase } from '../../application/usecase/create-room.usecase';
-import { JoinRoomUseCase } from '../../application/usecase/join-room.usecase';
-import { StartGameUseCase } from '../../application/usecase/start-game.usecase';
-import { SubmitHintUseCase } from '../../application/usecase/submit-hint.usecase';
-import { SubmitAnswerUseCase } from '../../application/usecase/submit-answer.usecase';
-import { NextRoundUseCase } from '../../application/usecase/next-round.usecase';
-import { RegenerateTopicUseCase } from '../../application/usecase/regenerate-topic.usecase';
+} from "@nestjs/websockets";
+import { Server, Socket } from "socket.io";
+import { Logger, Inject } from "@nestjs/common";
+import { CreateRoomUseCase } from "../../application/usecase/create-room.usecase";
+import { JoinRoomUseCase } from "../../application/usecase/join-room.usecase";
+import { StartGameUseCase } from "../../application/usecase/start-game.usecase";
+import { SubmitHintUseCase } from "../../application/usecase/submit-hint.usecase";
+import { SubmitAnswerUseCase } from "../../application/usecase/submit-answer.usecase";
+import { NextRoundUseCase } from "../../application/usecase/next-round.usecase";
+import { RegenerateTopicUseCase } from "../../application/usecase/regenerate-topic.usecase";
 import {
   IGameRepository,
   GAME_REPOSITORY,
-} from '../../domain/repository/i-game.repository';
-import { updatePlayerConnection, Room } from '../../domain/model/room';
-import { GameType } from '../../domain/model/game-base';
-import { JustOneGame } from '../../domain/model/games/just-one/just-one.game';
+} from "../../domain/repository/i-game.repository";
+import { updatePlayerConnection, Room } from "../../domain/model/room";
+import { GameType } from "../../domain/model/game-base";
+import { JustOneGame } from "../../domain/model/games/just-one/just-one.game";
 
 interface ClientData {
   playerId: string;
   roomId: string | null;
 }
 
+interface PlayerForClient {
+  id: string;
+  name: string;
+  isHost: boolean;
+  isConnected: boolean;
+}
+
+interface HintForClient {
+  playerId: string;
+  playerName: string;
+  text: string | null;
+  isValid: boolean;
+}
+
+interface RoundResultForClient {
+  round: number;
+  topic: string;
+  answererId: string;
+  answererName: string;
+  answer: string;
+  isCorrect: boolean;
+}
+
+interface JustOneGameForClient {
+  type: 'just-one';
+  phase: string;
+  round: number;
+  totalRounds: number;
+  answererId: string;
+  topic: string | null;
+  hints: HintForClient[];
+  answer: string | null;
+  isCorrect: boolean | null;
+  roundResults: RoundResultForClient[];
+}
+
 interface RoomStateForClient {
   id: string;
-  players: Array<{
-    id: string;
-    name: string;
-    isHost: boolean;
-    isConnected: boolean;
-  }>;
+  players: PlayerForClient[];
   gameType: GameType;
-  game: Record<string, unknown> | null;
+  game: JustOneGameForClient | null;
 }
 
 @WebSocketGateway({
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST'],
+    origin: "*",
+    methods: ["GET", "POST"],
   },
 })
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -63,7 +94,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly nextRoundUseCase: NextRoundUseCase,
     private readonly regenerateTopicUseCase: RegenerateTopicUseCase,
     @Inject(GAME_REPOSITORY)
-    private readonly gameRepository: IGameRepository,
+    private readonly gameRepository: IGameRepository
   ) {}
 
   handleConnection(client: Socket): void {
@@ -86,10 +117,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.clientData.delete(client.id);
   }
 
-  @SubscribeMessage('create-room')
+  @SubscribeMessage("create-room")
   async handleCreateRoom(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { playerId: string; playerName: string; gameType?: GameType },
+    @MessageBody()
+    payload: { playerId: string; playerName: string; gameType?: GameType }
   ): Promise<void> {
     try {
       const room = await this.createRoomUseCase.execute({
@@ -105,18 +137,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       await client.join(room.id);
 
-      client.emit('room-created', { roomId: room.id });
+      client.emit("room-created", { roomId: room.id });
       this.broadcastRoomState(room);
     } catch (error) {
       this.emitError(client, error);
     }
   }
 
-  @SubscribeMessage('join-room')
+  @SubscribeMessage("join-room")
   async handleJoinRoom(
     @ConnectedSocket() client: Socket,
     @MessageBody()
-    payload: { roomId: string; playerId: string; playerName: string },
+    payload: { roomId: string; playerId: string; playerName: string }
   ): Promise<void> {
     try {
       const room = await this.joinRoomUseCase.execute({
@@ -132,23 +164,25 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       await client.join(room.id);
 
-      client.emit('room-joined', { roomId: room.id });
+      client.emit("room-joined", { roomId: room.id });
       this.broadcastRoomState(room);
     } catch (error) {
       this.emitError(client, error);
     }
   }
 
-  @SubscribeMessage('start-game')
+  @SubscribeMessage("start-game")
   async handleStartGame(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { roomId: string; playerId: string; totalRounds?: number },
+    @MessageBody()
+    payload: { roomId: string; playerId: string; totalRounds?: number; excludeTopics?: string[] }
   ): Promise<void> {
     try {
       const room = await this.startGameUseCase.execute({
         roomId: payload.roomId,
         playerId: payload.playerId,
         totalRounds: payload.totalRounds,
+        excludeTopics: payload.excludeTopics,
       });
 
       this.broadcastRoomState(room);
@@ -157,10 +191,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  @SubscribeMessage('submit-hint')
+  @SubscribeMessage("submit-hint")
   async handleSubmitHint(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { roomId: string; playerId: string; hint: string },
+    @MessageBody() payload: { roomId: string; playerId: string; hint: string }
   ): Promise<void> {
     try {
       const room = await this.submitHintUseCase.execute({
@@ -175,11 +209,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  @SubscribeMessage('submit-answer')
+  @SubscribeMessage("submit-answer")
   async handleSubmitAnswer(
     @ConnectedSocket() client: Socket,
     @MessageBody()
-    payload: { roomId: string; playerId: string; answer: string },
+    payload: { roomId: string; playerId: string; answer: string }
   ): Promise<void> {
     try {
       const room = await this.submitAnswerUseCase.execute({
@@ -194,10 +228,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  @SubscribeMessage('next-round')
+  @SubscribeMessage("next-round")
   async handleNextRound(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { roomId: string; playerId: string },
+    @MessageBody() payload: { roomId: string; playerId: string }
   ): Promise<void> {
     try {
       const room = await this.nextRoundUseCase.execute({
@@ -211,10 +245,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  @SubscribeMessage('regenerate-topic')
+  @SubscribeMessage("regenerate-topic")
   async handleRegenerateTopic(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { roomId: string; playerId: string },
+    @MessageBody() payload: { roomId: string; playerId: string }
   ): Promise<void> {
     try {
       const room = await this.regenerateTopicUseCase.execute({
@@ -234,7 +268,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       for (const [socketId, data] of this.clientData.entries()) {
         if (data.roomId === room.id && data.playerId === player.id) {
-          this.server.to(socketId).emit('room-updated', playerState);
+          this.server.to(socketId).emit("room-updated", playerState);
         }
       }
     }
@@ -242,7 +276,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private transformRoomForPlayer(
     room: Room,
-    playerId: string,
+    playerId: string
   ): RoomStateForClient {
     const baseState: RoomStateForClient = {
       id: room.id,
@@ -261,7 +295,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     switch (room.game.type) {
-      case 'just-one':
+      case "just-one":
         return {
           ...baseState,
           game: this.transformJustOneGameForPlayer(room.game, playerId),
@@ -273,17 +307,17 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private transformJustOneGameForPlayer(
     game: JustOneGame,
-    playerId: string,
-  ): Record<string, unknown> {
+    playerId: string
+  ): JustOneGameForClient {
     const isAnswerer = game.answererId === playerId;
-    const isResultPhase = game.phase === 'RESULT';
+    const isResultOrFinished = game.phase === "RESULT" || game.phase === "FINISHED";
 
-    // お題: 結果画面では全員に表示、それ以外は回答者には非表示
-    const topic = isResultPhase ? game.topic : (isAnswerer ? null : game.topic);
+    // お題: 結果/終了画面では全員に表示、それ以外は回答者には非表示
+    const topic = isResultOrFinished ? game.topic : isAnswerer ? null : game.topic;
 
     // ヒント: フェーズによって表示内容を変える
-    let hints;
-    if (game.phase === 'HINTING') {
+    let hints: HintForClient[];
+    if (game.phase === "HINTING") {
       // ヒント中: 誰が出したかだけ表示（内容は隠す）
       hints = game.hints.map((h) => ({
         playerId: h.playerId,
@@ -291,7 +325,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         text: null,
         isValid: true,
       }));
-    } else if (game.phase === 'GUESSING') {
+    } else if (game.phase === "GUESSING") {
       // 回答中: 有効なヒントのみ内容表示、無効は隠す
       hints = game.hints.map((h) => ({
         playerId: h.playerId,
@@ -300,7 +334,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         isValid: h.isValid,
       }));
     } else {
-      // 結果: 全てのヒント内容を表示（無効も含む）
+      // 結果/終了: 全てのヒント内容を表示（無効も含む）
       hints = game.hints.map((h) => ({
         playerId: h.playerId,
         playerName: h.playerName,
@@ -319,12 +353,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       hints,
       answer: game.answer,
       isCorrect: game.isCorrect,
+      roundResults: game.roundResults || [],
     };
   }
 
   private emitError(client: Socket, error: unknown): void {
-    const message = error instanceof Error ? error.message : 'Unknown error';
+    const message = error instanceof Error ? error.message : "Unknown error";
     this.logger.error(`Error: ${message}`);
-    client.emit('error', { message });
+    client.emit("error", { message });
   }
 }

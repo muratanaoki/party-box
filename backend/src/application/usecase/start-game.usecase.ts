@@ -51,10 +51,12 @@ export class StartGameUseCase {
     const answerer = connectedPlayers[randomIndex];
 
     const totalRounds = dto.totalRounds ?? 5;
+    const excludeTopics = dto.excludeTopics ?? [];
     const game = await this.createGameByType(
       room.gameType,
       answerer.id,
-      totalRounds
+      totalRounds,
+      excludeTopics
     );
 
     const updatedRoom: Room = {
@@ -70,11 +72,12 @@ export class StartGameUseCase {
   private async createGameByType(
     gameType: GameType,
     answererId: string,
-    totalRounds: number
+    totalRounds: number,
+    excludeTopics: string[]
   ) {
     switch (gameType) {
       case "just-one":
-        const topic = await this.hintJudgeService.generateTopic();
+        const topic = await this.hintJudgeService.generateTopic(excludeTopics);
         return createJustOneGame(answererId, topic, totalRounds);
       default:
         throw new Error(`Unknown game type: ${gameType}`);

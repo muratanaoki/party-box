@@ -9,6 +9,15 @@ export interface Hint {
   isValid: boolean;
 }
 
+export interface RoundResult {
+  round: number;
+  topic: string;
+  answererId: string;
+  answererName: string;
+  answer: string;
+  isCorrect: boolean;
+}
+
 export interface JustOneGame extends GameBase {
   type: 'just-one';
   phase: JustOnePhase;
@@ -19,6 +28,7 @@ export interface JustOneGame extends GameBase {
   isCorrect: boolean | null;
   totalRounds: number;
   usedTopics: string[]; // 過去に出たお題
+  roundResults: RoundResult[]; // 各ラウンドの結果
 }
 
 export function createJustOneGame(answererId: string, topic: string, totalRounds: number = 5): JustOneGame {
@@ -33,6 +43,7 @@ export function createJustOneGame(answererId: string, topic: string, totalRounds
     round: 1,
     totalRounds,
     usedTopics: [topic],
+    roundResults: [],
   };
 }
 
@@ -88,7 +99,7 @@ export function transitionToGuessing(game: JustOneGame): JustOneGame {
   };
 }
 
-export function submitAnswer(game: JustOneGame, answer: string): JustOneGame {
+export function submitAnswer(game: JustOneGame, answer: string, answererName: string): JustOneGame {
   if (game.phase !== 'GUESSING') {
     return game;
   }
@@ -97,11 +108,21 @@ export function submitAnswer(game: JustOneGame, answer: string): JustOneGame {
   const normalizedTopic = game.topic.trim().toLowerCase();
   const isCorrect = normalizedAnswer === normalizedTopic;
 
+  const roundResult: RoundResult = {
+    round: game.round,
+    topic: game.topic,
+    answererId: game.answererId,
+    answererName,
+    answer,
+    isCorrect,
+  };
+
   return {
     ...game,
     phase: 'RESULT',
     answer,
     isCorrect,
+    roundResults: [...game.roundResults, roundResult],
   };
 }
 
@@ -121,6 +142,7 @@ export function resetGameForNextRound(
     round: game.round + 1,
     totalRounds: game.totalRounds,
     usedTopics: [...game.usedTopics, newTopic],
+    roundResults: game.roundResults,
   };
 }
 
@@ -153,4 +175,9 @@ export function allHintsSubmitted(
 ): boolean {
   const expectedHints = totalPlayers - 1;
   return game.hints.length >= expectedHints;
+}
+
+// 型ガード関数
+export function isJustOneGame(game: GameBase): game is JustOneGame {
+  return game.type === 'just-one';
 }
