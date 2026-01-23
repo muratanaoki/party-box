@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
 import Link from 'next/link';
@@ -8,7 +8,7 @@ import { useSocket } from '@/hooks/useSocket';
 import { getSocket } from '@/lib/socket';
 import { getStorageKeys } from '@/lib/storage';
 
-export default function JustOneLobby() {
+function JustOneLobbyContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isConnected, createRoom, joinRoom, error, clearError } = useSocket();
@@ -252,5 +252,24 @@ export default function JustOneLobby() {
         )}
       </div>
     </main>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <main className="min-h-screen bg-gradient-to-b from-indigo-50 to-white flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+        <p className="text-slate-600">読み込み中...</p>
+      </div>
+    </main>
+  );
+}
+
+export default function JustOneLobby() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <JustOneLobbyContent />
+    </Suspense>
   );
 }

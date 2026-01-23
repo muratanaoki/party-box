@@ -8,7 +8,6 @@ import {
   HINT_JUDGE_SERVICE,
 } from "../../domain/service/i-hint-judge.service";
 import {
-  JustOneGame,
   submitHint,
   allHintsSubmitted,
   setHintValidity,
@@ -17,13 +16,13 @@ import {
 import { Room } from "../../domain/model/room";
 import { SubmitHintDto } from "../dto/game-action.dto";
 import {
-  RoomNotFoundError,
-  GameNotStartedError,
-  InvalidPhaseError,
-  InvalidGameTypeError,
   HintContainsTopicError,
   HintNotSingleWordError,
 } from "../error/game.errors";
+import {
+  getJustOneGame,
+  validatePhase,
+} from "./helpers/game-validation.helper";
 
 @Injectable()
 export class SubmitHintUseCase {
@@ -35,25 +34,8 @@ export class SubmitHintUseCase {
   ) {}
 
   async execute(dto: SubmitHintDto): Promise<Room> {
-    const room = await this.gameRepository.findRoomById(dto.roomId);
-
-    if (!room) {
-      throw new RoomNotFoundError(dto.roomId);
-    }
-
-    if (!room.game) {
-      throw new GameNotStartedError();
-    }
-
-    if (room.game.type !== "just-one") {
-      throw new InvalidGameTypeError(room.game.type);
-    }
-
-    const game = room.game as JustOneGame;
-
-    if (game.phase !== "HINTING") {
-      throw new InvalidPhaseError();
-    }
+    const { room, game } = await getJustOneGame(this.gameRepository, dto.roomId);
+    validatePhase(game, "HINTING");
 
     const player = room.players.find((p) => p.id === dto.playerId);
     if (!player) {

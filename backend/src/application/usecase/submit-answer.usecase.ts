@@ -10,13 +10,11 @@ import {
 import { JustOneGame, RoundResult } from "../../domain/model/games/just-one/just-one.game";
 import { Room } from "../../domain/model/room";
 import { SubmitAnswerDto } from "../dto/game-action.dto";
+import { NotAnswererError } from "../error/game.errors";
 import {
-  RoomNotFoundError,
-  GameNotStartedError,
-  InvalidPhaseError,
-  InvalidGameTypeError,
-  NotAnswererError,
-} from "../error/game.errors";
+  getJustOneGame,
+  validatePhase,
+} from "./helpers/game-validation.helper";
 
 @Injectable()
 export class SubmitAnswerUseCase {
@@ -28,25 +26,8 @@ export class SubmitAnswerUseCase {
   ) {}
 
   async execute(dto: SubmitAnswerDto): Promise<Room> {
-    const room = await this.gameRepository.findRoomById(dto.roomId);
-
-    if (!room) {
-      throw new RoomNotFoundError(dto.roomId);
-    }
-
-    if (!room.game) {
-      throw new GameNotStartedError();
-    }
-
-    if (room.game.type !== "just-one") {
-      throw new InvalidGameTypeError(room.game.type);
-    }
-
-    const game = room.game as JustOneGame;
-
-    if (game.phase !== "GUESSING") {
-      throw new InvalidPhaseError();
-    }
+    const { room, game } = await getJustOneGame(this.gameRepository, dto.roomId);
+    validatePhase(game, "GUESSING");
 
     if (game.answererId !== dto.playerId) {
       throw new NotAnswererError();

@@ -6,6 +6,12 @@ import {
   HintFormatValidation,
 } from "../../domain/service/i-hint-judge.service";
 import { Hint } from "../../domain/model/games/just-one/just-one.game";
+import {
+  TOPIC_CATEGORIES,
+  FALLBACK_TOPICS,
+  SYSTEM_PROMPTS,
+  USER_PROMPTS,
+} from "./prompts/just-one.prompts";
 
 @Injectable()
 export class OpenAIHintJudgeService implements IHintJudgeService {
@@ -47,68 +53,13 @@ export class OpenAIHintJudgeService implements IHintJudgeService {
     excludeTopics: string[],
   ): Promise<string | null> {
     // カテゴリをランダムに選ぶ（重複を減らすため具体的に）
-    const categories = [
-      "動物園にいる動物",
-      "海の生き物",
-      "ペットとして飼える動物",
-      "日本の観光地",
-      "世界の有名な場所",
-      "スポーツ",
-      "楽器",
-      "乗り物",
-      "職業",
-      "日本の行事・イベント",
-      "家電製品",
-      "キッチン用品",
-      "文房具",
-      "おもちゃ・ゲーム",
-      "服・ファッション",
-      "アニメ・漫画のキャラクター",
-      "映画・ドラマ",
-      "お菓子・スイーツ",
-      "和食",
-      "洋食",
-      "飲み物",
-      "果物",
-      "野菜",
-      "花",
-      "木",
-      "虫",
-      "鳥",
-      "天気・自然現象",
-      "体の部位",
-      "感情",
-      "色",
-      "形",
-      "日用品",
-      "家具",
-      "建物",
-      "お店の種類",
-      "学校にあるもの",
-      "公園にあるもの",
-      "病院にあるもの",
-      "夏に関係するもの",
-      "冬に関係するもの",
-      "お正月に関係するもの",
-      "クリスマスに関係するもの",
-    ];
-    const category = categories[Math.floor(Math.random() * categories.length)];
-
-    const excludeNote =
-      excludeTopics.length > 0
-        ? `\n絶対に使わないで: ${excludeTopics.slice(-50).join("、")}`
-        : "";
+    const category =
+      TOPIC_CATEGORIES[Math.floor(Math.random() * TOPIC_CATEGORIES.length)];
 
     // ランダムな数字でバリエーションを出す
     const randomNum = Math.floor(Math.random() * 100) + 1;
 
-    const prompt = `「${category}」から連想される単語を1つだけ出力。
-条件:
-- 小学生でも知ってる一般的な単語
-- 定番すぎない（犬、猫、りんご等は避ける）
-- ランダムシード: ${randomNum}
-${excludeNote}
-単語のみ出力:`;
+    const prompt = USER_PROMPTS.generateTopic(category, randomNum, excludeTopics);
 
     try {
       const response = await this.openai.chat.completions.create({
@@ -116,8 +67,7 @@ ${excludeNote}
         messages: [
           {
             role: "system",
-            content:
-              "日本語の名詞を1つだけ出力。説明や句読点は不要。単語のみ。",
+            content: SYSTEM_PROMPTS.GENERATE_TOPIC,
           },
           { role: "user", content: prompt },
         ],
@@ -150,26 +100,13 @@ ${excludeNote}
   }
 
   async validateHintFormat(hint: string): Promise<HintFormatValidation> {
-    const prompt = `「${hint}」は1単語ですか？
-
-## OKな例（1単語として認める）
-- 名詞、形容詞、動詞: 「猫」「赤い」「走る」
-- 固有名詞: 「ピカチュウ」「東京タワー」「スターバックス」
-- 複合語: 「目覚まし時計」「携帯電話」
-
-## NGな例（1単語ではない）
-- 助詞付き: 「猫の」「りんごは」「海へ」「友達と」
-- 助動詞付き: 「赤いです」「走ります」
-- 2語以上: 「とても甘い」「大きな犬」
-- 文章: 「りんごは赤い」
-
-JSON形式: {"valid":true/false,"error":"NGの場合の理由"}`;
+    const prompt = USER_PROMPTS.validateFormat(hint);
 
     try {
       const response = await this.openai.chat.completions.create({
         model: this.model,
         messages: [
-          { role: "system", content: "1単語チェッカー。JSON出力のみ。" },
+          { role: "system", content: SYSTEM_PROMPTS.VALIDATE_FORMAT },
           { role: "user", content: prompt },
         ],
         response_format: { type: "json_object" },
@@ -193,31 +130,9 @@ JSON形式: {"valid":true/false,"error":"NGの場合の理由"}`;
   }
 
   private getFallbackTopic(excludeTopics: string[] = []): string {
-    const fallbackWords = [
-      "りんご",
-      "電車",
-      "猫",
-      "太陽",
-      "学校",
-      "傘",
-      "カレー",
-      "海",
-      "時計",
-      "本",
-      "桜",
-      "雨",
-      "犬",
-      "月",
-      "山",
-      "パン",
-      "ドラえもん",
-      "ピカチュウ",
-      "アンパンマン",
-      "サンタクロース",
-    ];
-    const available = fallbackWords.filter((w) => !excludeTopics.includes(w));
+    const available = FALLBACK_TOPICS.filter((w) => !excludeTopics.includes(w));
     if (available.length === 0) {
-      return fallbackWords[Math.floor(Math.random() * fallbackWords.length)];
+      return FALLBACK_TOPICS[Math.floor(Math.random() * FALLBACK_TOPICS.length)];
     }
     return available[Math.floor(Math.random() * available.length)];
   }
@@ -246,24 +161,13 @@ JSON形式: {"valid":true/false,"error":"NGの場合の理由"}`;
     // === AIチェック（意味的判定のみ）===
     // 表記違い（猫=ねこ）、翻訳（犬=dog）のみをチェック
 
-    const prompt = `お題「${topic}」とヒント「${hint}」は翻訳または表記違い？
-
-【無効＝翻訳・表記違い】
-- 表記違い: 猫=ねこ=ネコ、林檎=りんご
-- 翻訳: 犬=dog=ドッグ、海=sea=シー、霧=mist=ミスト、家=home=ホーム、車=car=カー、りんご=apple=アップル
-
-【有効＝翻訳ではない】
-- 連想語・関連語は有効: 海→波、犬→ペット、りんご→果物、屋根→家、屋根→ホーム
-- 上位/下位カテゴリは有効: ピカチュウ→ポケモン、犬→動物
-
-質問: ヒント「${hint}」はお題「${topic}」の翻訳または表記違いか？
-{"valid":true/false,"error":"理由"}`;
+    const prompt = USER_PROMPTS.validateAgainstTopic(topic, hint);
 
     try {
       const response = await this.openai.chat.completions.create({
         model: this.model,
         messages: [
-          { role: "system", content: "JSON出力のみ" },
+          { role: "system", content: SYSTEM_PROMPTS.VALIDATE_AGAINST_TOPIC },
           { role: "user", content: prompt },
         ],
         response_format: { type: "json_object" },
@@ -295,31 +199,13 @@ JSON形式: {"valid":true/false,"error":"NGの場合の理由"}`;
     }
 
     const hintTexts = hints.map((h, i) => `${i + 1}. "${h.text}"`).join("\n");
-
-    const prompt = `ヒント重複チェック:
-${hintTexts}
-
-重複=両方無効、重複じゃない=両方有効
-
-【重複の定義】文中で置き換えても意味が同じになるもの
-重複の例:
-- 表記違い: 猫=ねこ、林檎=りんご
-- 完全な同義語: 車=自動車、大きい=でかい、美しい=綺麗
-- 翻訳: 犬=dog、家=house
-
-【重複ではない】品詞が違う、または意味が異なるもの
-重複じゃない例:
-- 品詞違い: 暑い(形容詞)≠夏(名詞)、走る(動詞)≠速い(形容詞)
-- 関連語: 海≠波、犬≠ペット、りんご≠果物
-- 派生語: 王子≠王女、教師≠生徒
-
-迷ったら重複じゃない。{"results":[{"index":1,"valid":true/false}...]}`;
+    const prompt = USER_PROMPTS.judgeHints(hintTexts);
 
     try {
       const response = await this.openai.chat.completions.create({
         model: this.model,
         messages: [
-          { role: "system", content: "JSON出力のみ" },
+          { role: "system", content: SYSTEM_PROMPTS.JUDGE_HINTS },
           { role: "user", content: prompt },
         ],
         response_format: { type: "json_object" },
@@ -356,20 +242,13 @@ ${hintTexts}
     topic: string,
     answer: string,
   ): Promise<{ isCorrect: boolean; reason?: string }> {
-    const prompt = `お題「${topic}」に回答「${answer}」は正解？
-
-正解: 同じ意味（表記違い/ひらがな/カタカナ/漢字OK）
-例: 財布=さいふ=サイフ、りんご=リンゴ=林檎
-
-不正解: 別の単語
-
-{"correct":true/false,"reason":"理由"}`;
+    const prompt = USER_PROMPTS.judgeAnswer(topic, answer);
 
     try {
       const response = await this.openai.chat.completions.create({
         model: this.model,
         messages: [
-          { role: "system", content: "JSON出力のみ" },
+          { role: "system", content: SYSTEM_PROMPTS.JUDGE_ANSWER },
           { role: "user", content: prompt },
         ],
         response_format: { type: "json_object" },
