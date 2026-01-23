@@ -46,62 +46,69 @@ export class OpenAIHintJudgeService implements IHintJudgeService {
   private async tryGenerateTopic(
     excludeTopics: string[],
   ): Promise<string | null> {
-    // カテゴリをランダムに選ぶ
+    // カテゴリをランダムに選ぶ（重複を減らすため具体的に）
     const categories = [
-      "食べ物",
-      "動物",
-      "場所",
-      "道具",
-      "乗り物",
+      "動物園にいる動物",
+      "海の生き物",
+      "ペットとして飼える動物",
+      "日本の観光地",
+      "世界の有名な場所",
       "スポーツ",
-      "体の部位",
-      "職業",
-      "イベント",
       "楽器",
-      "服",
-      "キャラクター",
-      "家電",
-      "植物",
-      "お菓子",
+      "乗り物",
+      "職業",
+      "日本の行事・イベント",
+      "家電製品",
+      "キッチン用品",
       "文房具",
-      "おもちゃ",
-      "家具",
+      "おもちゃ・ゲーム",
+      "服・ファッション",
+      "アニメ・漫画のキャラクター",
+      "映画・ドラマ",
+      "お菓子・スイーツ",
+      "和食",
+      "洋食",
       "飲み物",
-      "国",
-      "虫",
-      "野菜",
       "果物",
-      "魚",
+      "野菜",
+      "花",
+      "木",
+      "虫",
       "鳥",
-      "料理",
-      "建物",
-      "天気",
+      "天気・自然現象",
+      "体の部位",
+      "感情",
       "色",
+      "形",
+      "日用品",
+      "家具",
+      "建物",
+      "お店の種類",
+      "学校にあるもの",
+      "公園にあるもの",
+      "病院にあるもの",
+      "夏に関係するもの",
+      "冬に関係するもの",
+      "お正月に関係するもの",
+      "クリスマスに関係するもの",
     ];
     const category = categories[Math.floor(Math.random() * categories.length)];
 
     const excludeNote =
       excludeTopics.length > 0
-        ? `\n使用禁止: ${excludeTopics.slice(-30).join("、")}`
+        ? `\n絶対に使わないで: ${excludeTopics.slice(-50).join("、")}`
         : "";
 
-    // バリエーションを出すためにランダムな条件を追加
-    const variations = [
-      "定番の",
-      "みんなが知ってる",
-      "日常でよく見る",
-      "子供も知ってる",
-      "テレビでよく見る",
-      "身近な",
-      "人気の",
-      "有名な",
-      "",
-      "",
-      "",
-    ];
-    const variation = variations[Math.floor(Math.random() * variations.length)];
+    // ランダムな数字でバリエーションを出す
+    const randomNum = Math.floor(Math.random() * 100) + 1;
 
-    const prompt = `「${category}」の中から、${variation}単語を1つ。ただし定番すぎるもの（犬、猫、りんご、バナナ等）は避けて。専門用語・マイナーすぎるものは禁止。単語のみ出力。${excludeNote}`;
+    const prompt = `「${category}」から連想される単語を1つだけ出力。
+条件:
+- 小学生でも知ってる一般的な単語
+- 定番すぎない（犬、猫、りんご等は避ける）
+- ランダムシード: ${randomNum}
+${excludeNote}
+単語のみ出力:`;
 
     try {
       const response = await this.openai.chat.completions.create({
@@ -109,12 +116,13 @@ export class OpenAIHintJudgeService implements IHintJudgeService {
         messages: [
           {
             role: "system",
-            content: "日本語の名詞を1つだけ出力。説明不要。",
+            content:
+              "日本語の名詞を1つだけ出力。説明や句読点は不要。単語のみ。",
           },
           { role: "user", content: prompt },
         ],
-        max_tokens: 15,
-        temperature: 1.0,
+        max_tokens: 20,
+        temperature: 1.2, // より多様性を出す
       });
 
       const content = response.choices[0]?.message?.content?.trim();
@@ -218,22 +226,38 @@ JSON形式: {"valid":true/false,"error":"NGの場合の理由"}`;
     topic: string,
     hint: string,
   ): Promise<HintFormatValidation> {
-    const prompt = `お題「${topic}」にヒント「${hint}」は有効？
+    // === コードチェック（AI不要）===
 
-無効条件（厳密にこれだけ）:
-1. お題と完全に同じ/表記違い（猫=ねこ=ネコ）
-2. お題の文字列を含む（山→富士山、電車→電車賃）
-3. お題の一部の文字（りんご→りん、携帯電話→携帯）
-4. お題の直接翻訳（犬→dog、猫→cat、海→sea/ocean）
+    // 1. 完全一致
+    if (hint === topic) {
+      return { isValid: false, error: "お題と同じです" };
+    }
 
-有効な例（これらは許可）:
-- 連想語: 屋根→家、瓦、建物、ホーム（直接翻訳ではない）
-- 関連語: 海→波、砂浜、夏
-- 同カテゴリ: 犬→柴犬、プードル
+    // 2. ヒントがお題を含む（山→富士山✗）
+    if (hint.includes(topic)) {
+      return { isValid: false, error: "お題の文字を含んでいます" };
+    }
 
-「翻訳」とは同じ意味の外国語への直訳のみ。連想や関連は翻訳ではない。
-迷ったら必ず有効にする。
-{"valid":true/false,"error":"無効理由"}`;
+    // 3. お題がヒントを含む（携帯電話→携帯✗、りんご→りん✗）
+    if (topic.includes(hint) && hint.length >= 2) {
+      return { isValid: false, error: "お題の一部です" };
+    }
+
+    // === AIチェック（意味的判定のみ）===
+    // 表記違い（猫=ねこ）、翻訳（犬=dog）のみをチェック
+
+    const prompt = `お題「${topic}」とヒント「${hint}」は翻訳または表記違い？
+
+【無効＝翻訳・表記違い】
+- 表記違い: 猫=ねこ=ネコ、林檎=りんご
+- 翻訳: 犬=dog=ドッグ、海=sea=シー、霧=mist=ミスト、家=home=ホーム、車=car=カー、りんご=apple=アップル
+
+【有効＝翻訳ではない】
+- 連想語・関連語は有効: 海→波、犬→ペット、りんご→果物、屋根→家、屋根→ホーム
+- 上位/下位カテゴリは有効: ピカチュウ→ポケモン、犬→動物
+
+質問: ヒント「${hint}」はお題「${topic}」の翻訳または表記違いか？
+{"valid":true/false,"error":"理由"}`;
 
     try {
       const response = await this.openai.chat.completions.create({
@@ -243,7 +267,7 @@ JSON形式: {"valid":true/false,"error":"NGの場合の理由"}`;
           { role: "user", content: prompt },
         ],
         response_format: { type: "json_object" },
-        max_tokens: 60,
+        max_tokens: 100,
       });
 
       const content = response.choices[0]?.message?.content;
@@ -275,17 +299,21 @@ JSON形式: {"valid":true/false,"error":"NGの場合の理由"}`;
     const prompt = `ヒント重複チェック:
 ${hintTexts}
 
-重複=無効（両方消える）:
-- 同じ/表記違い（猫=ねこ）
-- 同義語（車=自動車）
-- 翻訳（犬=dog）
+重複=両方無効、重複じゃない=両方有効
 
-重複じゃない（両方有効）:
-- 派生語（王子と王女）
-- 関連語（暑いと夏）
+【重複の定義】文中で置き換えても意味が同じになるもの
+重複の例:
+- 表記違い: 猫=ねこ、林檎=りんご
+- 完全な同義語: 車=自動車、大きい=でかい、美しい=綺麗
+- 翻訳: 犬=dog、家=house
 
-迷ったら有効。
-{"results":[{"index":1,"valid":true/false,"reason":"理由"}...]}`;
+【重複ではない】品詞が違う、または意味が異なるもの
+重複じゃない例:
+- 品詞違い: 暑い(形容詞)≠夏(名詞)、走る(動詞)≠速い(形容詞)
+- 関連語: 海≠波、犬≠ペット、りんご≠果物
+- 派生語: 王子≠王女、教師≠生徒
+
+迷ったら重複じゃない。{"results":[{"index":1,"valid":true/false}...]}`;
 
     try {
       const response = await this.openai.chat.completions.create({

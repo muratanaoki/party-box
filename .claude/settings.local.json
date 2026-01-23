@@ -9,7 +9,9 @@
       "Bash(npx tsc:*)",
       "Bash(find:*)",
       "Bash(curl:*)",
-      "Bash(git push)"
+      "Bash(git push)",
+      "Bash(npx ts-node:*)",
+      "Bash(npm ls:*)"
     ]
   }
 }
