@@ -1,8 +1,8 @@
 # Party Box
 
-URL を共有するだけで遊べる、リアルタイム・ボードゲームプラットフォーム。
+URL を共有するだけで遊べる、リアルタイム・マルチプレイヤー・ボードゲームプラットフォーム。
 
-## 第一弾ゲーム: One Hint
+## 第一弾ゲーム: Just One
 
 協力型ワード推測ゲーム。「ジャストワン」のクローン。
 
@@ -17,27 +17,39 @@ URL を共有するだけで遊べる、リアルタイム・ボードゲーム�
 
 - **認証不要**: 名前を入力するだけで参加
 - **データベース不要**: サーバーのメモリで管理（MVP）
-- **AI 審判**: OpenAI GPT-4o-mini がヒントの重複を判定
+- **AI 審判**: OpenAI GPT-4o-mini がヒントの重複・妥当性を判定
 
 ## 技術スタック
 
 | 層             | 技術                                                 |
 | -------------- | ---------------------------------------------------- |
-| フロントエンド | Next.js 15, React 19, Tailwind CSS, Socket.io-client |
-| バックエンド   | NestJS, Socket.io, OpenAI API                        |
+| フロントエンド | Next.js 15, React 19, Tailwind CSS 4, Socket.io-client |
+| バックエンド   | NestJS 10, Socket.io, OpenAI API                     |
 | インフラ       | Docker, Docker Compose                               |
 
 ## ディレクトリ構成
 
 ```
 party-box/
-├── frontend/          # Next.js フロントエンド
-├── backend/           # NestJS バックエンド (Clean Architecture)
-├── docker-compose.yml # コンテナ管理
-└── .env               # 環境変数 (OPENAI_API_KEY)
+├── frontend/              # Next.js フロントエンド
+│   └── src/
+│       ├── app/           # App Router ページ
+│       ├── components/    # React コンポーネント
+│       ├── hooks/         # カスタムフック
+│       ├── lib/           # ユーティリティ
+│       └── types/         # TypeScript 型定義
+├── backend/               # NestJS バックエンド (Clean Architecture)
+│   └── src/
+│       ├── domain/        # ドメイン層（ビジネスロジック）
+│       ├── application/   # アプリケーション層（ユースケース）
+│       ├── infrastructure/# インフラ層（リポジトリ・外部サービス）
+│       └── presentation/  # プレゼンテーション層（Gateway）
+├── docs/                  # 技術ドキュメント
+├── docker-compose.yml     # コンテナ管理
+└── .env                   # 環境変数 (OPENAI_API_KEY)
 ```
 
-## 起動方法
+## クイックスタート
 
 ### 1. 環境変数を設定
 
@@ -74,4 +86,19 @@ docker-compose logs -f
 
 # 停止
 docker-compose down
+
+# 個別起動（Docker なし）
+cd backend && npm run start:dev
+cd frontend && npm run dev
 ```
+
+## ドキュメント
+
+詳細な技術ドキュメントは `docs/` ディレクトリを参照:
+
+- [学習ロードマップ](docs/LEARNING.md) - このプロジェクトで学べる技術カリキュラム
+- [アーキテクチャ設計](docs/ARCHITECTURE.md) - システム構成、Clean Architecture
+
+## ライセンス
+
+MIT
