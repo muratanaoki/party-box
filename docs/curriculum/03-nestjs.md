@@ -23,10 +23,10 @@ Angular にインスパイアされた構造化されたアーキテクチャが
 
 ```typescript
 @Module({
-  imports: [OtherModule],      // 他のモジュールをインポート
+  imports: [OtherModule], // 他のモジュールをインポート
   controllers: [AppController], // HTTPリクエストを処理
-  providers: [AppService],      // ビジネスロジック
-  exports: [AppService],        // 他モジュールに公開
+  providers: [AppService], // ビジネスロジック
+  exports: [AppService], // 他モジュールに公開
 })
 export class AppModule {}
 ```
@@ -45,7 +45,7 @@ AppModule (ルート)
 HTTP リクエストを受け取り、レスポンスを返す。
 
 ```typescript
-@Controller('users')
+@Controller("users")
 export class UsersController {
   constructor(private usersService: UsersService) {}
 
@@ -54,8 +54,8 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string): User {
+  @Get(":id")
+  findOne(@Param("id") id: string): User {
     return this.usersService.findOne(id);
   }
 
@@ -80,7 +80,7 @@ export class UsersService {
   }
 
   findOne(id: string): User {
-    return this.users.find(user => user.id === id);
+    return this.users.find((user) => user.id === id);
   }
 
   create(dto: CreateUserDto): User {
@@ -139,13 +139,13 @@ backend/src/infrastructure/module/
 
     // Repository (インフラ層) - インターフェースにバインド
     {
-      provide: 'IGameRepository',
+      provide: "IGameRepository",
       useClass: InMemoryGameRepository,
     },
 
     // Service (インフラ層) - インターフェースにバインド
     {
-      provide: 'IHintJudgeService',
+      provide: "IHintJudgeService",
       useClass: OpenAIHintJudgeService,
     },
   ],
@@ -198,29 +198,29 @@ class CreateRoomUseCase {
 
 ### クラスデコレーター
 
-| デコレーター | 用途 |
-|--------------|------|
-| `@Module()` | モジュール定義 |
+| デコレーター    | 用途               |
+| --------------- | ------------------ |
+| `@Module()`     | モジュール定義     |
 | `@Controller()` | コントローラー定義 |
-| `@Injectable()` | DI 可能なクラス |
+| `@Injectable()` | DI 可能なクラス    |
 
 ### メソッドデコレーター（HTTP）
 
 | デコレーター | HTTPメソッド |
-|--------------|--------------|
-| `@Get()` | GET |
-| `@Post()` | POST |
-| `@Put()` | PUT |
-| `@Patch()` | PATCH |
-| `@Delete()` | DELETE |
+| ------------ | ------------ |
+| `@Get()`     | GET          |
+| `@Post()`    | POST         |
+| `@Put()`     | PUT          |
+| `@Patch()`   | PATCH        |
+| `@Delete()`  | DELETE       |
 
 ### パラメーターデコレーター
 
-| デコレーター | 取得対象 |
-|--------------|----------|
-| `@Param()` | URLパラメーター |
-| `@Query()` | クエリパラメーター |
-| `@Body()` | リクエストボディ |
+| デコレーター | 取得対象           |
+| ------------ | ------------------ |
+| `@Param()`   | URLパラメーター    |
+| `@Query()`   | クエリパラメーター |
+| `@Body()`    | リクエストボディ   |
 | `@Headers()` | リクエストヘッダー |
 
 ---
@@ -231,21 +231,21 @@ Party Box では HTTP ではなく WebSocket を使用。
 
 ```typescript
 @WebSocketGateway({
-  cors: { origin: '*' },
+  cors: { origin: "*" },
 })
 export class GameGateway {
   @WebSocketServer()
   server: Server;
 
   // イベントを受信
-  @SubscribeMessage('create-room')
+  @SubscribeMessage("create-room")
   async handleCreateRoom(
     @MessageBody() data: CreateRoomDto,
     @ConnectedSocket() client: Socket,
   ) {
     const result = await this.createRoomUseCase.execute(data);
     client.join(result.roomId);
-    return { event: 'room-created', data: result };
+    return { event: "room-created", data: result };
   }
 
   // 特定のルームにブロードキャスト
@@ -285,6 +285,7 @@ NestJS アプリケーションのライフサイクル:
 ### 課題 1: モジュール構造を読む
 
 `backend/src/infrastructure/module/game.module.ts` を読んで:
+
 1. どんな Provider が登録されているか
 2. インターフェースへのバインドがどう行われているか
 
@@ -294,11 +295,11 @@ NestJS アプリケーションのライフサイクル:
 
 ```typescript
 // health.controller.ts
-@Controller('health')
+@Controller("health")
 export class HealthController {
   @Get()
   check() {
-    return { status: 'ok' };
+    return { status: "ok" };
   }
 }
 ```
